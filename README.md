@@ -1,22 +1,26 @@
 # Creative Sales CRM
 
-Supplier-first CRM and project management foundation for Creative Sales Solutions.
+Operational supplier-first CRM slice for Creative Sales Solutions, built for Replit hosting with Replit Postgres.
 
-## Implemented foundation
+## Current product slice
 
-- Next.js 14 App Router scaffold
-- Drizzle schema for the approved supplier-first data model
-- Replit-native Postgres foundation via `DATABASE_URL`
+- Dashboard with live metrics from Postgres
+- Supplier workspace with:
+  - supplier records
+  - supplier contacts
+  - supplier-specific projects
+  - tasks
+  - activity timeline
+- Global projects page with stage management
+- Global tasks page with task creation and completion
+- Global activity page with timeline logging
+- Automatic workspace seeding for a brand-new database so the app is usable immediately
 - Finance-ready schema extensions:
   - supplier finance metadata
   - expanded supplier contact roles
   - expanded activity types
   - `supplier_transactions`
   - `cashflow_entries`
-- Postgres migration file for the initial schema
-- Shared TypeScript domain types
-- Activity type fallback label utility
-- Basic landing page describing the implementation state
 
 ## Environment
 
@@ -27,7 +31,7 @@ Copy `.env.example` to `.env.local` and set at minimum:
 
 ## Replit hosting
 
-This project is now wired for Replit deployment with Replit-native Postgres.
+This project is wired for Replit deployment with Replit-native Postgres.
 
 - `.replit` runs the app on port `3000` and maps it to external port `80`
 - `replit.nix` provides Node 20 + npm
@@ -57,8 +61,8 @@ npm run db:push
 
 ## Notes
 
+- The first launch into an empty database seeds pipeline stages, core retailers, a default admin user, sample suppliers, sample projects, sample tasks, sample activities, sample buyers, and supplier contacts.
 - Finance schema additions are present but intentionally unused by CRM UI and routes at this stage.
 - No finance-specific screens, jobs, or endpoints are included yet.
-- The database layer is vendor-neutral Postgres and already compatible with Replit Postgres.
-- Auth and file handling will be implemented without Supabase. The likely path is direct Microsoft OAuth plus app-managed sessions, with file uploads either stored in Replit-compatible object storage or handled as links first.
-- The current codebase is the implementation foundation for the broader 8-week roadmap, not the full end-state product.
+- Auth is not implemented yet. The current operational slice assumes a shared internal workspace and uses a seeded admin user for record attribution.
+- The next major build slices are Microsoft auth, inbox sync, calendar sync, spreadsheet imports, and leadership reporting.
