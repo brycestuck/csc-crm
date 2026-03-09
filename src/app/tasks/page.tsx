@@ -14,72 +14,57 @@ export default async function TasksPage() {
   const data = await getTasksPageData();
 
   return (
-    <main className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="hub-panel rounded-[32px] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-          Tasks
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Execution queue</h1>
-        <div className="mt-6 grid gap-4">
+    <main className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="panel p-4">
+        <div className="border-b border-zinc-200 pb-3">
+          <p className="section-kicker">Tasks</p>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">Execution queue</h1>
+        </div>
+        <div className="mt-4 grid gap-3">
           {data.tasks.map((task) => (
-            <article
-              key={task.id}
-              className="hub-subpanel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-5"
-            >
-              <div>
-                <h2 className="text-lg font-semibold text-[var(--ink)]">{task.title}</h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  {task.supplierName || "No supplier"} · {task.projectName || "No project"} · Due{" "}
-                  {formatDate(task.dueDate)} ({formatRelativeDaysFromNow(task.dueDate)})
-                </p>
-                <div className="mt-2 text-sm text-[var(--muted)]">
-                  Owner: {task.ownerName || "Unassigned"}
+            <article key={task.id} className="subpanel p-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-base font-semibold text-zinc-950">{task.title}</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
+                    {task.supplierName || "No supplier"} · {task.projectName || "No project"} · Due {formatDate(task.dueDate)} ({formatRelativeDaysFromNow(task.dueDate)})
+                  </p>
+                  <div className="mt-2 text-sm text-zinc-500">Owner: {task.ownerName || "Unassigned"}</div>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">
-                  {task.priority}
-                </span>
-                <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">
-                  {task.status}
-                </span>
-                <AssignTaskOwnerForm
-                  entityId={task.id}
-                  ownerUserId={task.ownerUserId}
-                  returnTo="/tasks"
-                  users={data.users}
-                />
-                <TaskStatusForm taskId={task.id} returnTo="/tasks" currentStatus={task.status} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="pill font-mono">{task.priority}</span>
+                  <span className="pill font-mono">{task.status}</span>
+                  <AssignTaskOwnerForm
+                    entityId={task.id}
+                    ownerUserId={task.ownerUserId}
+                    returnTo="/tasks"
+                    users={data.users}
+                  />
+                  <TaskStatusForm taskId={task.id} returnTo="/tasks" currentStatus={task.status} />
+                </div>
               </div>
             </article>
           ))}
         </div>
       </section>
 
-      <aside className="grid gap-6">
-        <CreateTaskForm
-          supplierOptions={data.suppliers}
-          projects={data.projects}
-          users={data.users}
-          returnTo="/tasks"
-        />
+      <aside className="grid gap-4">
+        <CreateTaskForm supplierOptions={data.suppliers} projects={data.projects} users={data.users} returnTo="/tasks" />
 
-        <section className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Queue summary
-          </p>
-          <div className="mt-5 grid gap-3">
-            <div className="hub-subpanel rounded-[20px] p-4">
-              <div className="text-sm text-[var(--muted)]">Open tasks</div>
-              <div className="mt-2 text-3xl font-semibold text-[var(--ink)]">{data.metrics.openCount}</div>
+        <section className="panel p-4">
+          <p className="section-kicker">Queue summary</p>
+          <div className="mt-4 grid gap-3">
+            <div className="subpanel p-4">
+              <div className="section-kicker">Open tasks</div>
+              <div className="metric-value mt-2">{data.metrics.openCount}</div>
             </div>
-            <div className="hub-subpanel rounded-[20px] p-4">
-              <div className="text-sm text-[var(--muted)]">Overdue</div>
-              <div className="mt-2 text-3xl font-semibold text-[var(--ink)]">{data.metrics.overdueCount}</div>
+            <div className="subpanel p-4">
+              <div className="section-kicker">Overdue</div>
+              <div className="metric-value mt-2">{data.metrics.overdueCount}</div>
             </div>
-            <div className="hub-subpanel rounded-[20px] p-4">
-              <div className="text-sm text-[var(--muted)]">Completed</div>
-              <div className="mt-2 text-3xl font-semibold text-[var(--ink)]">{data.metrics.doneCount}</div>
+            <div className="subpanel p-4">
+              <div className="section-kicker">Completed</div>
+              <div className="metric-value mt-2">{data.metrics.doneCount}</div>
             </div>
           </div>
         </section>

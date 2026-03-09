@@ -137,7 +137,14 @@ async function seedPipelineStages() {
         displayOrder: stage.displayOrder,
         color: stage.color,
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: pipelineStages.name,
+        set: {
+          displayOrder: stage.displayOrder,
+          color: stage.color,
+          isActive: true,
+        },
+      });
   }
 }
 
@@ -1166,7 +1173,7 @@ export async function createUser(input: {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
-  const colorPool = ["#8863b7", "#5f4689", "#7c6ab0", "#b08ccb", "#7c89d9", "#6b8ea6"];
+  const colorPool = ["#111827", "#312e81", "#1e40af", "#334155", "#0369a1", "#0f766e"];
   const color = colorPool[input.displayName.length % colorPool.length];
 
   const inserted = await db

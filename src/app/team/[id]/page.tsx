@@ -16,104 +16,81 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
   if (!data) notFound();
 
   return (
-    <main className="grid gap-6">
-      <section className="hub-panel rounded-[32px] p-6">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="flex items-start gap-5">
+    <main className="grid gap-4">
+      <section className="panel p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
             <UserAvatar
               name={data.user.displayName}
               color={data.user.avatarColor}
               imagePath={data.user.avatarImagePath}
-              className="h-20 w-20 rounded-[28px]"
-              textClassName="text-2xl"
+              className="h-20 w-20"
+              textClassName="text-xl"
               sizes="80px"
             />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-                Team member
-              </p>
-              <h1 className="mt-3 text-4xl font-semibold text-[var(--ink)]">{data.user.displayName}</h1>
-              <p className="mt-2 text-base text-[var(--muted)]">
-                {data.user.jobTitle || "No title yet"}
-              </p>
-              <p className="mt-1 text-sm text-[var(--muted)]">
+              <p className="section-kicker">Team member</p>
+              <h1 className="mt-1 text-2xl font-semibold text-zinc-950">{data.user.displayName}</h1>
+              <p className="mt-2 text-sm text-zinc-500">{data.user.jobTitle || "No title yet"}</p>
+              <p className="mt-1 text-sm text-zinc-500">
                 {data.user.department || "No department yet"} · {data.user.role}
               </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">{data.user.email}</p>
-              {data.user.phone ? <p className="mt-1 text-sm text-[var(--muted)]">{data.user.phone}</p> : null}
-              {data.user.teamPartner ? (
-                <p className="mt-2 text-sm text-[var(--accent-deep)]">Sales partner: {data.user.teamPartner}</p>
-              ) : null}
-              {data.user.bio ? (
-                <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--muted)]">{data.user.bio}</p>
-              ) : null}
+              <p className="mt-2 text-sm text-zinc-500">{data.user.email}</p>
+              {data.user.phone ? <p className="mt-1 text-sm text-zinc-500">{data.user.phone}</p> : null}
+              {data.user.teamPartner ? <p className="mt-2 text-sm text-zinc-700">Sales partner: {data.user.teamPartner}</p> : null}
+              {data.user.bio ? <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-500">{data.user.bio}</p> : null}
             </div>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.supplierCount} suppliers</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.accountCount} accounts</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.projectCount} projects</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.taskCount} open tasks</span>
+          <div className="flex flex-wrap gap-2">
+            <span className="pill font-mono">{data.metrics.supplierCount} suppliers</span>
+            <span className="pill font-mono">{data.metrics.accountCount} accounts</span>
+            <span className="pill font-mono">{data.metrics.projectCount} projects</span>
+            <span className="pill font-mono">{data.metrics.taskCount} open tasks</span>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <article className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Owned suppliers
-          </p>
-          <div className="mt-5 grid gap-3">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <article className="panel p-4">
+          <p className="section-kicker">Owned suppliers</p>
+          <div className="mt-4 grid gap-3">
             {data.suppliers.length === 0 ? (
-              <div className="hub-subpanel rounded-[24px] p-4 text-sm text-[var(--muted)]">
-                No suppliers assigned yet.
-              </div>
+              <div className="subpanel p-4 text-sm text-zinc-500">No suppliers assigned yet.</div>
             ) : (
               data.suppliers.map((supplier) => (
-                <div key={supplier.id} className="hub-subpanel rounded-[24px] p-4">
-                  <div className="font-medium text-[var(--ink)]">{supplier.name}</div>
-                  <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                    {supplier.summary || "No summary yet."}
-                  </div>
-                  <div className="mt-2 text-sm text-[var(--muted)]">Updated {formatDate(supplier.updatedAt)}</div>
+                <div key={supplier.id} className="subpanel p-4">
+                  <div className="text-sm font-semibold text-zinc-950">{supplier.name}</div>
+                  <div className="mt-1 text-sm leading-6 text-zinc-500">{supplier.summary || "No summary yet."}</div>
+                  <div className="mt-3 font-mono text-xs text-zinc-500">Updated {formatDate(supplier.updatedAt)}</div>
                 </div>
               ))
             )}
           </div>
         </article>
 
-        <article className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Active projects
-          </p>
-          <div className="mt-5 grid gap-3">
+        <article className="panel p-4">
+          <p className="section-kicker">Active projects</p>
+          <div className="mt-4 grid gap-3">
             {data.projects.length === 0 ? (
-              <div className="hub-subpanel rounded-[24px] p-4 text-sm text-[var(--muted)]">
-                No projects assigned yet.
-              </div>
+              <div className="subpanel p-4 text-sm text-zinc-500">No projects assigned yet.</div>
             ) : (
               data.projects.map((project) => (
-                <div key={project.id} className="hub-subpanel rounded-[24px] p-4">
+                <div key={project.id} className="subpanel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="font-medium text-[var(--ink)]">{project.name}</div>
-                      <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                      <div className="text-sm font-semibold text-zinc-950">{project.name}</div>
+                      <div className="mt-1 text-sm leading-6 text-zinc-500">
                         {project.supplierName} · {project.retailerName}
                       </div>
                     </div>
                     <span
-                      className="rounded-full px-3 py-2 text-sm"
-                      style={{
-                        backgroundColor: `${project.stageColor || "#ddd"}22`,
-                        color: project.stageColor || "var(--ink)",
-                      }}
+                      className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: `${project.stageColor || "#d4d4d8"}22`, color: project.stageColor || "#18181b" }}
                     >
                       {project.stageName || "No stage"}
                     </span>
                   </div>
-                  {project.summary ? (
-                    <div className="mt-3 text-sm leading-6 text-[var(--muted)]">{project.summary}</div>
-                  ) : null}
+                  {project.summary ? <div className="mt-3 text-sm leading-6 text-zinc-500">{project.summary}</div> : null}
                 </div>
               ))
             )}
@@ -121,34 +98,28 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
         </article>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <article className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Assigned accounts
-          </p>
-          <div className="mt-5 grid gap-3">
+      <section className="grid gap-4 xl:grid-cols-2">
+        <article className="panel p-4">
+          <p className="section-kicker">Assigned accounts</p>
+          <div className="mt-4 grid gap-3">
             {data.accounts.length === 0 ? (
-              <div className="hub-subpanel rounded-[24px] p-4 text-sm text-[var(--muted)]">
-                No customer accounts assigned yet.
-              </div>
+              <div className="subpanel p-4 text-sm text-zinc-500">No customer accounts assigned yet.</div>
             ) : (
               data.accounts.map((account) => (
-                <div key={account.id} className="hub-subpanel rounded-[24px] p-4">
+                <div key={account.id} className="subpanel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="font-medium text-[var(--ink)]">
+                      <div className="text-sm font-semibold text-zinc-950">
                         {account.supplierName} · {account.retailerName}
                       </div>
-                      <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                      <div className="mt-1 text-sm leading-6 text-zinc-500">
                         {account.assignmentRole}
-                        {account.sourceCustomerName !== account.retailerName
-                          ? ` · Imported as ${account.sourceCustomerName}`
-                          : ""}
+                        {account.sourceCustomerName !== account.retailerName ? ` · Imported as ${account.sourceCustomerName}` : ""}
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
-                      <span className="rounded-full bg-white px-3 py-2">{account.projectCount} projects</span>
-                      <span className="rounded-full bg-white px-3 py-2">{account.openTaskCount} open tasks</span>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="pill font-mono">{account.projectCount} projects</span>
+                      <span className="pill font-mono">{account.openTaskCount} open tasks</span>
                     </div>
                   </div>
                 </div>
@@ -157,62 +128,51 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
           </div>
         </article>
 
-        <article className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Task load
-          </p>
-          <div className="mt-5 grid gap-3">
+        <article className="panel p-4">
+          <p className="section-kicker">Task load</p>
+          <div className="mt-4 grid gap-3">
             {data.tasks.length === 0 ? (
-              <div className="hub-subpanel rounded-[24px] p-4 text-sm text-[var(--muted)]">
-                No tasks assigned yet.
-              </div>
+              <div className="subpanel p-4 text-sm text-zinc-500">No tasks assigned yet.</div>
             ) : (
               data.tasks.map((task) => (
-                <div key={task.id} className="hub-subpanel rounded-[24px] p-4">
-                  <div className="font-medium text-[var(--ink)]">{task.title}</div>
-                  <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                    {task.supplierName || "No supplier"} · {task.projectName || "No project"} ·{" "}
-                    {formatRelativeDaysFromNow(task.dueDate)}
+                <div key={task.id} className="subpanel p-4">
+                  <div className="text-sm font-semibold text-zinc-950">{task.title}</div>
+                  <div className="mt-1 text-sm leading-6 text-zinc-500">
+                    {task.supplierName || "No supplier"} · {task.projectName || "No project"} · {formatRelativeDaysFromNow(task.dueDate)}
                   </div>
-                  <div className="mt-2 flex flex-wrap gap-2 text-sm text-[var(--muted)]">
-                    <span className="rounded-full bg-white px-3 py-2">{task.priority}</span>
-                    <span className="rounded-full bg-white px-3 py-2">{task.status}</span>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="pill font-mono">{task.priority}</span>
+                    <span className="pill font-mono">{task.status}</span>
                   </div>
                 </div>
               ))
             )}
           </div>
         </article>
+      </section>
 
-        <article className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Recent activity
-          </p>
-          <div className="mt-5 grid gap-3">
-            {data.activities.length === 0 ? (
-              <div className="hub-subpanel rounded-[24px] p-4 text-sm text-[var(--muted)]">
-                No recent activity yet.
-              </div>
-            ) : (
-              data.activities.map((activity) => (
-                <div key={activity.id} className="hub-subpanel rounded-[24px] p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="font-medium text-[var(--ink)]">{activity.subject}</div>
-                      <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                        {activity.supplierName} · {activity.projectName} · {activity.label}
-                      </div>
+      <section className="panel p-4">
+        <p className="section-kicker">Recent activity</p>
+        <div className="mt-4 grid gap-3 xl:grid-cols-2">
+          {data.activities.length === 0 ? (
+            <div className="subpanel p-4 text-sm text-zinc-500">No recent activity yet.</div>
+          ) : (
+            data.activities.map((activity) => (
+              <div key={activity.id} className="subpanel p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-zinc-950">{activity.subject}</div>
+                    <div className="mt-1 text-sm leading-6 text-zinc-500">
+                      {activity.supplierName} · {activity.projectName} · {activity.label}
                     </div>
-                    <span className="text-sm text-[var(--muted)]">{formatDate(activity.happenedAt)}</span>
                   </div>
-                  {activity.body ? (
-                    <div className="mt-3 text-sm leading-6 text-[var(--muted)]">{activity.body}</div>
-                  ) : null}
+                  <span className="font-mono text-xs text-zinc-500">{formatDate(activity.happenedAt)}</span>
                 </div>
-              ))
-            )}
-          </div>
-        </article>
+                {activity.body ? <div className="mt-3 text-sm leading-6 text-zinc-500">{activity.body}</div> : null}
+              </div>
+            ))
+          )}
+        </div>
       </section>
     </main>
   );

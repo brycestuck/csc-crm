@@ -160,18 +160,18 @@ export const jobRunStatuses = ["pending", "running", "succeeded", "failed"] as c
 export type JobRunStatus = (typeof jobRunStatuses)[number];
 
 export const pipelineStageSeeds = [
-  { name: "Prospecting", displayOrder: 1, color: "#8f8a72" },
-  { name: "Introduction", displayOrder: 2, color: "#1b6b5f" },
-  { name: "PDB / Assessment", displayOrder: 3, color: "#c98f2d" },
-  { name: "Proposal Submitted", displayOrder: 4, color: "#d7683b" },
-  { name: "Samples / Review", displayOrder: 5, color: "#8a5cf6" },
-  { name: "Selection / Approval", displayOrder: 6, color: "#3f7cac" },
-  { name: "Finalization", displayOrder: 7, color: "#ef8354" },
-  { name: "Setup / Onboarding", displayOrder: 8, color: "#3f826d" },
-  { name: "Production / Shipping", displayOrder: 9, color: "#7c4d2d" },
-  { name: "In-Store / Live", displayOrder: 10, color: "#2f855a" },
-  { name: "Post-Mod Review", displayOrder: 11, color: "#4a5568" },
-  { name: "Closed / Archived", displayOrder: 12, color: "#9b2c2c" },
+  { name: "Prospecting", displayOrder: 1, color: "#78716c" },
+  { name: "Introduction", displayOrder: 2, color: "#0f766e" },
+  { name: "PDB / Assessment", displayOrder: 3, color: "#d97706" },
+  { name: "Proposal Submitted", displayOrder: 4, color: "#ea580c" },
+  { name: "Samples / Review", displayOrder: 5, color: "#2563eb" },
+  { name: "Selection / Approval", displayOrder: 6, color: "#1d4ed8" },
+  { name: "Finalization", displayOrder: 7, color: "#0369a1" },
+  { name: "Setup / Onboarding", displayOrder: 8, color: "#0f766e" },
+  { name: "Production / Shipping", displayOrder: 9, color: "#334155" },
+  { name: "In-Store / Live", displayOrder: 10, color: "#047857" },
+  { name: "Post-Mod Review", displayOrder: 11, color: "#52525b" },
+  { name: "Closed / Archived", displayOrder: 12, color: "#be123c" },
 ] as const;
 
 export type ExecutionDashboardDTO = {

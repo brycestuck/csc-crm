@@ -13,44 +13,37 @@ export default async function ProjectsPage() {
   const data = await getProjectsPageData();
 
   return (
-    <main className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="hub-panel rounded-[32px] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-          Projects
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Pipeline and workstreams</h1>
-        <div className="mt-6 grid gap-4">
+    <main className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="panel p-4">
+        <div className="border-b border-zinc-200 pb-3">
+          <p className="section-kicker">Projects</p>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">Pipeline and workstreams</h1>
+        </div>
+        <div className="mt-4 grid gap-3">
           {data.projects.map((project) => (
-            <article key={project.id} className="hub-subpanel rounded-[24px] p-5">
+            <article key={project.id} className="subpanel p-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-[var(--ink)]">{project.name}</h2>
-                  <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-base font-semibold text-zinc-950">{project.name}</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
                     {project.supplierName} · {project.retailerName}
                     {project.buyerName ? ` · ${project.buyerName}` : ""}
                   </p>
-                  {project.summary ? (
-                    <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{project.summary}</p>
-                  ) : null}
+                  {project.summary ? <p className="mt-2 text-sm leading-6 text-zinc-500">{project.summary}</p> : null}
                 </div>
-                <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
-                  <span className="rounded-full bg-white px-3 py-2">
-                    Owner: {project.ownerName || "Unassigned"}
-                  </span>
-                  <span className="rounded-full bg-white px-3 py-2">Priority: {project.priority}</span>
-                  <span className="rounded-full bg-white px-3 py-2">Status: {project.status}</span>
+                <div className="flex flex-wrap gap-2">
+                  <span className="pill">{project.ownerName || "Unassigned"}</span>
+                  <span className="pill font-mono">{project.priority}</span>
+                  <span className="pill font-mono">{project.status}</span>
                   <span
-                    className="rounded-full px-3 py-2"
-                    style={{
-                      backgroundColor: `${project.stageColor || "#ddd"}22`,
-                      color: project.stageColor || "var(--ink)",
-                    }}
+                    className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium"
+                    style={{ backgroundColor: `${project.stageColor || "#d4d4d8"}22`, color: project.stageColor || "#18181b" }}
                   >
                     {project.stageName || "No stage"}
                   </span>
                 </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-3">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <ProjectStageForm
                   projectId={project.id}
                   returnTo="/projects"
@@ -69,7 +62,7 @@ export default async function ProjectsPage() {
         </div>
       </section>
 
-      <aside className="grid gap-6">
+      <aside className="grid gap-4">
         <CreateProjectForm
           supplierOptions={data.suppliers}
           retailers={data.retailers}
@@ -78,24 +71,16 @@ export default async function ProjectsPage() {
           returnTo="/projects"
         />
 
-        <section className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Stage summary
-          </p>
-          <div className="mt-5 grid gap-3">
+        <section className="panel p-4">
+          <p className="section-kicker">Stage summary</p>
+          <div className="mt-4 grid gap-2">
             {data.stageSummary.map((stage) => (
-              <div
-                key={stage.id}
-                className="hub-subpanel flex items-center justify-between rounded-[20px] px-4 py-3"
-              >
+              <div key={stage.id} className="subpanel flex items-center justify-between px-3 py-3">
                 <div className="flex items-center gap-3">
-                  <span
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: stage.color || "var(--accent-strong)" }}
-                  />
-                  <span className="text-sm font-medium text-[var(--ink)]">{stage.name}</span>
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stage.color || "#18181b" }} />
+                  <span className="text-sm font-medium text-zinc-900">{stage.name}</span>
                 </div>
-                <span className="text-sm text-[var(--muted)]">{stage.count}</span>
+                <span className="font-mono text-sm text-zinc-500">{stage.count}</span>
               </div>
             ))}
           </div>

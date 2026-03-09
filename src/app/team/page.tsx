@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FormDrawer } from "@/components/crm/form-drawer";
 import { CreateUserForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
 import { UserAvatar } from "@/components/crm/user-avatar";
@@ -15,61 +16,60 @@ export default async function TeamPage() {
   const data = await getTeamPageData();
 
   return (
-    <main className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="hub-panel rounded-[32px] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-          Team
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">People and ownership</h1>
-        <div className="mt-6 grid gap-4">
-          {data.users.map((user) => (
-            <Link
-              key={user.id}
-              href={`/team/${user.id}`}
-              className="hub-subpanel rounded-[24px] p-5 transition hover:-translate-y-0.5 hover:border-[var(--accent-strong)]"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <UserAvatar
-                    name={user.displayName}
-                    color={user.avatarColor}
-                    imagePath={user.avatarImagePath}
-                    className="h-14 w-14 rounded-2xl"
-                    textClassName="text-lg"
-                    sizes="56px"
-                  />
-                  <div>
-                    <h2 className="text-xl font-semibold text-[var(--ink)]">{user.displayName}</h2>
-                    <p className="mt-1 text-sm text-[var(--muted)]">
-                      {user.jobTitle || "No title yet"}
-                    </p>
-                    <p className="mt-1 text-sm text-[var(--muted)]">
-                      {user.department || "No department yet"} · {user.role}
-                    </p>
-                    <p className="mt-2 text-sm text-[var(--muted)]">{user.email}</p>
-                    {user.teamPartner ? (
-                      <p className="mt-2 text-sm text-[var(--accent-deep)]">Partner: {user.teamPartner}</p>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
-                  <span className="rounded-full bg-white px-3 py-2">{user.supplierCount} suppliers</span>
-                  <span className="rounded-full bg-white px-3 py-2">{user.accountCount} accounts</span>
-                  <span className="rounded-full bg-white px-3 py-2">{user.activeProjectCount} projects</span>
-                  <span className="rounded-full bg-white px-3 py-2">{user.openTaskCount} open tasks</span>
-                </div>
-              </div>
-              {user.bio ? (
-                <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--muted)]">{user.bio}</p>
-              ) : null}
-            </Link>
-          ))}
+    <main className="grid gap-4">
+      <section className="panel p-4">
+        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 pb-4">
+          <div>
+            <p className="section-kicker">Team</p>
+            <h1 className="mt-1 text-2xl font-semibold text-zinc-950">People and ownership</h1>
+          </div>
+          <FormDrawer
+            triggerLabel="Add Team Member"
+            title="Add team member"
+            description="Create a profile so the person can own suppliers, accounts, projects, and tasks."
+          >
+            <CreateUserForm embedded />
+          </FormDrawer>
         </div>
       </section>
 
-      <aside>
-        <CreateUserForm />
-      </aside>
+      <section className="grid gap-3 xl:grid-cols-2">
+        {data.users.map((user) => (
+          <Link key={user.id} href={`/team/${user.id}`} className="panel p-4 transition hover:border-zinc-300 hover:bg-zinc-50">
+            <div className="flex items-start gap-4">
+              <UserAvatar
+                name={user.displayName}
+                color={user.avatarColor}
+                imagePath={user.avatarImagePath}
+                className="h-14 w-14"
+                textClassName="text-base"
+                sizes="56px"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-base font-semibold text-zinc-950">{user.displayName}</h2>
+                  <span className="pill">{user.role}</span>
+                </div>
+                <p className="mt-1 text-sm text-zinc-500">{user.jobTitle || "No title yet"}</p>
+                <p className="mt-1 text-sm text-zinc-500">
+                  {user.department || "No department yet"}
+                </p>
+                <p className="mt-2 text-sm text-zinc-500">{user.email}</p>
+                {user.teamPartner ? <p className="mt-2 text-sm text-zinc-700">Partner: {user.teamPartner}</p> : null}
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="pill font-mono">{user.supplierCount} suppliers</span>
+              <span className="pill font-mono">{user.accountCount} accounts</span>
+              <span className="pill font-mono">{user.activeProjectCount} projects</span>
+              <span className="pill font-mono">{user.openTaskCount} open tasks</span>
+            </div>
+
+            {user.bio ? <p className="mt-3 text-sm leading-6 text-zinc-500">{user.bio}</p> : null}
+          </Link>
+        ))}
+      </section>
     </main>
   );
 }

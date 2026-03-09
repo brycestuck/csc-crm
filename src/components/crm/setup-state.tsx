@@ -2,15 +2,16 @@ import { DatabaseZap } from "lucide-react";
 
 export function SetupState({ title, message }: { title: string; message: string }) {
   return (
-    <main className="hub-panel rounded-[32px] p-8">
-      <div className="inline-flex rounded-2xl bg-[var(--accent-soft)] p-3 text-[var(--accent-deep)]">
-        <DatabaseZap size={22} />
+    <main className="panel p-5">
+      <div className="inline-flex rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-zinc-700">
+        <DatabaseZap size={18} />
       </div>
-      <h2 className="mt-5 text-3xl font-semibold text-[var(--ink)]">{title}</h2>
-      <p className="mt-4 max-w-2xl text-base leading-7 text-[var(--muted)]">{message}</p>
-      <div className="mt-6 rounded-2xl border border-[var(--line)] bg-white/70 p-4 text-sm text-[var(--muted)]">
-        In Replit, open the shell and run <code className="rounded bg-white px-2 py-1">npm run db:push</code>{" "}
-        after setting your <code className="rounded bg-white px-2 py-1">DATABASE_URL</code> secret.
+      <p className="section-kicker mt-4">Workspace status</p>
+      <h2 className="mt-2 text-2xl font-semibold text-zinc-950">{title}</h2>
+      <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-500">{message}</p>
+      <div className="subpanel mt-4 p-4 text-sm leading-6 text-zinc-500">
+        In Replit, open the shell and run <code className="rounded bg-white px-2 py-1 font-mono text-zinc-900">npm run db:push</code>{" "}
+        after setting your <code className="rounded bg-white px-2 py-1 font-mono text-zinc-900">DATABASE_URL</code> secret.
       </div>
     </main>
   );

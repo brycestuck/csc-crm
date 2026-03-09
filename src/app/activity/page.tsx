@@ -14,47 +14,40 @@ export default async function ActivityPage() {
   const data = await getActivitiesPageData();
 
   return (
-    <main className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="hub-panel rounded-[32px] p-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-          Activity
-        </p>
-        <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Interaction timeline</h1>
-        <div className="mt-6 grid gap-4">
+    <main className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <section className="panel p-4">
+        <div className="border-b border-zinc-200 pb-3">
+          <p className="section-kicker">Activity</p>
+          <h1 className="mt-1 text-2xl font-semibold text-zinc-950">Interaction timeline</h1>
+        </div>
+        <div className="mt-4 grid gap-3">
           {data.activities.map((activity) => (
-            <article key={activity.id} className="hub-subpanel rounded-[24px] p-5">
+            <article key={activity.id} className="subpanel p-4">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--ink)]">{activity.subject}</h2>
-                  <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                  <h2 className="text-base font-semibold text-zinc-950">{activity.subject}</h2>
+                  <p className="mt-1 text-sm leading-6 text-zinc-500">
                     {activity.supplierName} · {activity.projectName} · {activity.label}
                   </p>
                 </div>
-                <span className="text-sm text-[var(--muted)]">{formatDate(activity.happenedAt)}</span>
+                <span className="font-mono text-xs text-zinc-500">{formatDate(activity.happenedAt)}</span>
               </div>
-              {activity.body ? (
-                <p className="mt-4 text-sm leading-6 text-[var(--muted)]">{activity.body}</p>
-              ) : null}
+              {activity.body ? <p className="mt-3 text-sm leading-6 text-zinc-500">{activity.body}</p> : null}
             </article>
           ))}
         </div>
       </section>
 
-      <aside className="grid gap-6">
+      <aside className="grid gap-4">
         <CreateActivityForm projects={data.projects} returnTo="/activity" />
 
-        <section className="hub-panel rounded-[32px] p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Type summary
-          </p>
-          <div className="mt-5 grid gap-3">
+        <section className="panel p-4">
+          <p className="section-kicker">Type summary</p>
+          <div className="mt-4 grid gap-2">
             {data.typeSummary.map((item) => (
-              <div
-                key={item.label}
-                className="hub-subpanel flex items-center justify-between rounded-[20px] px-4 py-3"
-              >
-                <span className="text-sm font-medium text-[var(--ink)]">{item.label}</span>
-                <span className="text-sm text-[var(--muted)]">{item.count}</span>
+              <div key={item.label} className="subpanel flex items-center justify-between px-3 py-3">
+                <span className="text-sm font-medium text-zinc-900">{item.label}</span>
+                <span className="font-mono text-sm text-zinc-500">{item.count}</span>
               </div>
             ))}
           </div>

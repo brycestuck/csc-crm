@@ -47,11 +47,15 @@ type StageOption = {
 };
 
 function inputClassName() {
-  return "rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-4 py-3 text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] outline-none transition focus:border-[var(--accent-strong)] focus:bg-white";
+  return "input-control";
 }
 
-function cardClassName() {
-  return "hub-panel grid gap-3 rounded-[28px] p-5";
+function cardClassName(embedded = false) {
+  return embedded ? "grid gap-3" : "panel grid gap-3 p-4";
+}
+
+function sectionTitleClassName() {
+  return "text-base font-semibold text-zinc-950";
 }
 
 function ownerOptionLabel(user: UserOption) {
@@ -79,28 +83,28 @@ function OwnerSelectForm({
     <form action={action} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name={entityIdName} value={entityId} />
       <input type="hidden" name="returnTo" value={returnTo} />
-      <select
-        name="ownerUserId"
-        defaultValue={ownerUserId || users[0]?.id || ""}
-        className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm outline-none"
-      >
+      <select name="ownerUserId" defaultValue={ownerUserId || users[0]?.id || ""} className="input-control w-auto min-w-[220px]">
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {ownerOptionLabel(user)}
           </option>
         ))}
       </select>
-      <button className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm font-medium text-[var(--ink)]">
-        Assign
-      </button>
+      <button className="btn-secondary">Assign</button>
     </form>
   );
 }
 
-export function CreateSupplierForm({ users }: { users: UserOption[] }) {
+export function CreateSupplierForm({
+  users,
+  embedded = false,
+}: {
+  users: UserOption[];
+  embedded?: boolean;
+}) {
   return (
-    <form action={createSupplierAction} className={cardClassName()}>
-      <h2 className="text-lg font-semibold text-[var(--ink)]">Add supplier</h2>
+    <form action={createSupplierAction} className={cardClassName(embedded)}>
+      {!embedded ? <h2 className={sectionTitleClassName()}>Add supplier</h2> : null}
       <input name="name" placeholder="Supplier name" required className={inputClassName()} />
       <select name="ownerUserId" defaultValue="" className={inputClassName()}>
         <option value="">No fallback owner</option>
@@ -112,17 +116,15 @@ export function CreateSupplierForm({ users }: { users: UserOption[] }) {
       </select>
       <textarea name="summary" placeholder="Short summary" rows={3} className={inputClassName()} />
       <textarea name="notes" placeholder="Internal notes" rows={4} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
-        Create supplier
-      </button>
+      <button className="btn-primary">Create supplier</button>
     </form>
   );
 }
 
-export function CreateUserForm() {
+export function CreateUserForm({ embedded = false }: { embedded?: boolean }) {
   return (
-    <form action={createUserAction} className={cardClassName()}>
-      <h2 className="text-lg font-semibold text-[var(--ink)]">Add team member</h2>
+    <form action={createUserAction} className={cardClassName(embedded)}>
+      {!embedded ? <h2 className={sectionTitleClassName()}>Add team member</h2> : null}
       <input name="displayName" placeholder="Full name" required className={inputClassName()} />
       <input name="email" type="email" placeholder="Email" required className={inputClassName()} />
       <input name="jobTitle" placeholder="Job title" className={inputClassName()} />
@@ -137,9 +139,7 @@ export function CreateUserForm() {
         ))}
       </select>
       <textarea name="bio" placeholder="Short profile note" rows={4} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
-        Create profile
-      </button>
+      <button className="btn-primary">Create profile</button>
     </form>
   );
 }
@@ -148,7 +148,7 @@ export function CreateSupplierContactForm({ supplierId }: { supplierId: string }
   return (
     <form action={createSupplierContactAction} className={cardClassName()}>
       <input type="hidden" name="supplierId" value={supplierId} />
-      <h3 className="text-lg font-semibold text-[var(--ink)]">Add supplier contact</h3>
+      <h3 className={sectionTitleClassName()}>Add supplier contact</h3>
       <input name="fullName" placeholder="Full name" required className={inputClassName()} />
       <input name="title" placeholder="Title" className={inputClassName()} />
       <input name="email" type="email" placeholder="Email" className={inputClassName()} />
@@ -161,9 +161,7 @@ export function CreateSupplierContactForm({ supplierId }: { supplierId: string }
         ))}
       </select>
       <textarea name="notes" placeholder="Notes" rows={3} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
-        Save contact
-      </button>
+      <button className="btn-primary">Save contact</button>
     </form>
   );
 }
@@ -191,7 +189,7 @@ export function CreateProjectForm({
     <form action={createProjectAction} className={cardClassName()}>
       {supplierId ? <input type="hidden" name="supplierId" value={supplierId} /> : null}
       <input type="hidden" name="returnTo" value={returnTo} />
-      <h3 className="text-lg font-semibold text-[var(--ink)]">Create project</h3>
+      <h3 className={sectionTitleClassName()}>Create project</h3>
       {!supplierId ? (
         <select name="supplierId" required defaultValue="" className={inputClassName()}>
           <option value="" disabled>
@@ -238,9 +236,7 @@ export function CreateProjectForm({
         ))}
       </select>
       <textarea name="summary" placeholder="Summary" rows={3} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--accent-strong)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(136,99,183,0.2)]">
-        Add project
-      </button>
+      <button className="btn-primary">Add project</button>
     </form>
   );
 }
@@ -266,7 +262,7 @@ export function CreateTaskForm({
     <form action={createTaskAction} className={cardClassName()}>
       {supplierId ? <input type="hidden" name="supplierId" value={supplierId} /> : null}
       <input type="hidden" name="returnTo" value={returnTo} />
-      <h3 className="text-lg font-semibold text-[var(--ink)]">Add task</h3>
+      <h3 className={sectionTitleClassName()}>Add task</h3>
       {!supplierId ? (
         <select name="supplierId" required defaultValue="" className={inputClassName()}>
           <option value="" disabled>
@@ -304,9 +300,7 @@ export function CreateTaskForm({
           </option>
         ))}
       </select>
-      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
-        Add task
-      </button>
+      <button className="btn-primary">Add task</button>
     </form>
   );
 }
@@ -338,7 +332,7 @@ export function CreateActivityForm({
     <form action={createActivityAction} className={cardClassName()}>
       {projectId ? <input type="hidden" name="projectId" value={projectId} /> : null}
       <input type="hidden" name="returnTo" value={returnTo} />
-      <h3 className="text-lg font-semibold text-[var(--ink)]">Log activity</h3>
+      <h3 className={sectionTitleClassName()}>Log activity</h3>
       {!projectId ? (
         <select name="projectId" required defaultValue="" className={inputClassName()}>
           <option value="" disabled>
@@ -360,9 +354,7 @@ export function CreateActivityForm({
         ))}
       </select>
       <textarea name="body" placeholder="Details" rows={4} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
-        Save activity
-      </button>
+      <button className="btn-primary">Save activity</button>
     </form>
   );
 }
@@ -382,20 +374,14 @@ export function ProjectStageForm({
     <form action={updateProjectStageAction} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="returnTo" value={returnTo} />
-      <select
-        name="pipelineStageId"
-        defaultValue={currentStageId || stages[0]?.id || ""}
-        className="rounded-xl border border-[var(--line)] bg-[var(--paper)] px-3 py-2 text-sm outline-none"
-      >
+      <select name="pipelineStageId" defaultValue={currentStageId || stages[0]?.id || ""} className="input-control w-auto min-w-[220px]">
         {stages.map((stage) => (
           <option key={stage.id} value={stage.id}>
             {stage.name}
           </option>
         ))}
       </select>
-      <button className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm font-medium text-[var(--ink)]">
-        Update
-      </button>
+      <button className="btn-secondary">Update</button>
     </form>
   );
 }
@@ -416,9 +402,7 @@ export function TaskStatusForm({
       <input type="hidden" name="taskId" value={taskId} />
       <input type="hidden" name="returnTo" value={returnTo} />
       <input type="hidden" name="nextStatus" value={nextStatus} />
-      <button className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm font-medium text-[var(--ink)]">
-        {currentStatus === "done" ? "Reopen" : "Mark done"}
-      </button>
+      <button className="btn-secondary">{currentStatus === "done" ? "Reopen" : "Mark done"}</button>
     </form>
   );
 }

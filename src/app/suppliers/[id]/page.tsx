@@ -26,77 +26,68 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
   if (!data) notFound();
 
   return (
-    <main className="grid gap-6">
-      <section className="hub-panel rounded-[32px] p-6">
+    <main className="grid gap-4">
+      <section className="panel p-4">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-              Supplier
-            </p>
-            <h1 className="mt-3 text-4xl font-semibold text-[var(--ink)]">{data.supplier.name}</h1>
-            <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
+          <div className="min-w-0 flex-1">
+            <p className="section-kicker">Supplier</p>
+            <h1 className="mt-1 text-2xl font-semibold text-zinc-950">{data.supplier.name}</h1>
+            <p className="mt-3 max-w-4xl text-sm leading-6 text-zinc-500">
               {data.supplier.summary || "No supplier summary yet."}
             </p>
-            {data.supplier.notes ? (
-              <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--muted)]">{data.supplier.notes}</p>
-            ) : null}
-            <div className="mt-4 text-sm text-[var(--muted)]">
-              Coverage: {data.supplier.ownerLabel}
-            </div>
+            {data.supplier.notes ? <p className="mt-3 max-w-4xl text-sm leading-6 text-zinc-500">{data.supplier.notes}</p> : null}
+            <div className="mt-3 text-sm text-zinc-500">Coverage: {data.supplier.ownerLabel}</div>
           </div>
-          <div className="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.supplier.accountCount} accounts</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.projects.length} projects</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.tasks.length} tasks</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.activities.length} activities</span>
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.contacts.length} contacts</span>
+          <div className="flex flex-wrap gap-2">
+            <span className="pill font-mono">{data.supplier.accountCount} accounts</span>
+            <span className="pill font-mono">{data.projects.length} projects</span>
+            <span className="pill font-mono">{data.tasks.length} tasks</span>
+            <span className="pill font-mono">{data.activities.length} activities</span>
+            <span className="pill font-mono">{data.contacts.length} contacts</span>
           </div>
         </div>
-        <div className="mt-5">
-          <p className="mb-2 text-sm text-[var(--muted)]">Fallback supplier owner</p>
-          <AssignSupplierOwnerForm
-            entityId={params.id}
-            ownerUserId={data.supplier.ownerUserId}
-            returnTo={`/suppliers/${params.id}`}
-            users={data.users}
-          />
+
+        <div className="mt-4 border-t border-zinc-200 pt-4">
+          <p className="section-kicker">Fallback supplier owner</p>
+          <div className="mt-2">
+            <AssignSupplierOwnerForm
+              entityId={params.id}
+              ownerUserId={data.supplier.ownerUserId}
+              returnTo={`/suppliers/${params.id}`}
+              users={data.users}
+            />
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="grid gap-6">
-          <article className="hub-panel rounded-[32px] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-              Accounts
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Customer coverage</h2>
-            <div className="mt-5 grid gap-3">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="grid gap-4">
+          <article className="panel p-4">
+            <p className="section-kicker">Accounts</p>
+            <h2 className="mt-1 text-xl font-semibold text-zinc-950">Customer coverage</h2>
+            <div className="mt-4 grid gap-3">
               {data.accounts.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-[var(--line)] bg-[var(--paper)] p-5 text-sm text-[var(--muted)]">
-                  No customer accounts imported yet.
-                </div>
+                <div className="subpanel border-dashed p-4 text-sm text-zinc-500">No customer accounts imported yet.</div>
               ) : (
                 data.accounts.map((account) => (
-                  <div key={account.id} className="hub-subpanel rounded-[24px] p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div key={account.id} className="subpanel p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-semibold text-[var(--ink)]">{account.retailerName}</h3>
+                        <h3 className="text-sm font-semibold text-zinc-950">{account.retailerName}</h3>
                         {account.sourceCustomerName !== account.retailerName ? (
-                          <p className="mt-2 text-sm text-[var(--muted)]">
-                            Imported as {account.sourceCustomerName}
-                          </p>
+                          <p className="mt-1 text-sm text-zinc-500">Imported as {account.sourceCustomerName}</p>
                         ) : null}
                       </div>
-                      <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
-                        <span className="rounded-full bg-white px-3 py-2">{account.projectCount} projects</span>
-                        <span className="rounded-full bg-white px-3 py-2">{account.openTaskCount} open tasks</span>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="pill font-mono">{account.projectCount} projects</span>
+                        <span className="pill font-mono">{account.openTaskCount} open tasks</span>
                       </div>
                     </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2">
-                      <div className="rounded-[20px] bg-white px-4 py-3 text-sm text-[var(--muted)]">
+                    <div className="mt-3 grid gap-2 md:grid-cols-2">
+                      <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500">
                         EAM: {account.eamDisplayName || "Unassigned"}
                       </div>
-                      <div className="rounded-[20px] bg-white px-4 py-3 text-sm text-[var(--muted)]">
+                      <div className="rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-500">
                         SPM: {account.spmDisplayName || "Unassigned"}
                       </div>
                     </div>
@@ -106,29 +97,23 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           </article>
 
-          <article className="hub-panel rounded-[32px] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-              Contacts
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Supplier relationships</h2>
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <article className="panel p-4">
+            <p className="section-kicker">Contacts</p>
+            <h2 className="mt-1 text-xl font-semibold text-zinc-950">Supplier relationships</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
               {data.contacts.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-[var(--line)] bg-[var(--paper)] p-5 text-sm text-[var(--muted)]">
-                  No supplier contacts yet.
-                </div>
+                <div className="subpanel border-dashed p-4 text-sm text-zinc-500">No supplier contacts yet.</div>
               ) : (
                 data.contacts.map((contact) => (
-                <div key={contact.id} className="hub-subpanel rounded-[24px] p-5">
-                    <div className="flex items-start justify-between gap-4">
+                  <div key={contact.id} className="subpanel p-4">
+                    <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-lg font-semibold text-[var(--ink)]">{contact.fullName}</h3>
-                        <p className="mt-1 text-sm text-[var(--muted)]">{contact.title || "No title"}</p>
+                        <h3 className="text-sm font-semibold text-zinc-950">{contact.fullName}</h3>
+                        <p className="mt-1 text-sm text-zinc-500">{contact.title || "No title"}</p>
                       </div>
-                      <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">
-                        {contact.contactRole}
-                      </span>
+                      <span className="pill">{contact.contactRole}</span>
                     </div>
-                    <div className="mt-4 grid gap-2 text-sm text-[var(--muted)]">
+                    <div className="mt-3 grid gap-1 text-sm text-zinc-500">
                       {contact.email ? <div>{contact.email}</div> : null}
                       {contact.phone ? <div>{contact.phone}</div> : null}
                       {contact.notes ? <div className="leading-6">{contact.notes}</div> : null}
@@ -139,42 +124,39 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           </article>
 
-          <article className="hub-panel rounded-[32px] p-6">
-            <div className="mb-5 flex items-center justify-between gap-4">
+          <article className="panel p-4">
+            <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-3">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-                  Projects
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Active workstreams</h2>
+                <p className="section-kicker">Projects</p>
+                <h2 className="mt-1 text-xl font-semibold text-zinc-950">Active workstreams</h2>
               </div>
             </div>
-            <div className="grid gap-4">
+            <div className="mt-4 grid gap-3">
               {data.projects.map((project) => (
-                <div key={project.id} className="hub-subpanel rounded-[24px] p-5">
+                <div key={project.id} className="subpanel p-4">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h3 className="text-lg font-semibold text-[var(--ink)]">{project.name}</h3>
-                      <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                      <h3 className="text-sm font-semibold text-zinc-950">{project.name}</h3>
+                      <p className="mt-1 text-sm leading-6 text-zinc-500">
                         {project.retailerName}
                         {project.buyerName ? ` · ${project.buyerName}` : ""}
                         {project.summary ? ` · ${project.summary}` : ""}
                       </p>
                     </div>
-                    <span className="rounded-full px-3 py-2 text-sm" style={{ backgroundColor: `${project.stageColor || "#ddd"}22`, color: project.stageColor || "var(--ink)" }}>
+                    <span
+                      className="inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium"
+                      style={{ backgroundColor: `${project.stageColor || "#d4d4d8"}22`, color: project.stageColor || "#18181b" }}
+                    >
                       {project.stageName || "No stage"}
                     </span>
                   </div>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-[var(--muted)]">
-                    <span className="rounded-full bg-white px-3 py-2">
-                      Owner: {project.ownerName || "Unassigned"}
-                    </span>
-                    <span className="rounded-full bg-white px-3 py-2">Priority: {project.priority}</span>
-                    <span className="rounded-full bg-white px-3 py-2">Status: {project.status}</span>
-                    {project.modEffectiveDate ? (
-                      <span className="rounded-full bg-white px-3 py-2">Mod date: {formatDate(project.modEffectiveDate)}</span>
-                    ) : null}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="pill">{project.ownerName || "Unassigned"}</span>
+                    <span className="pill font-mono">{project.priority}</span>
+                    <span className="pill font-mono">{project.status}</span>
+                    {project.modEffectiveDate ? <span className="pill font-mono">{formatDate(project.modEffectiveDate)}</span> : null}
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <ProjectStageForm
                       projectId={project.id}
                       returnTo={`/suppliers/${params.id}`}
@@ -193,63 +175,59 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           </article>
 
-          <article className="hub-panel rounded-[32px] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-              Tasks
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Execution queue</h2>
-            <div className="mt-5 grid gap-3">
+          <article className="panel p-4">
+            <p className="section-kicker">Tasks</p>
+            <h2 className="mt-1 text-xl font-semibold text-zinc-950">Execution queue</h2>
+            <div className="mt-4 grid gap-3">
               {data.tasks.map((task) => (
-                <div key={task.id} className="hub-subpanel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-4">
-                  <div>
-                    <div className="font-medium text-[var(--ink)]">{task.title}</div>
-                    <div className="mt-1 text-sm text-[var(--muted)]">
-                      {task.projectName || "No project"} · {formatRelativeDaysFromNow(task.dueDate)}
+                <div key={task.id} className="subpanel p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <div className="text-sm font-semibold text-zinc-950">{task.title}</div>
+                      <div className="mt-1 text-sm text-zinc-500">
+                        {task.projectName || "No project"} · {formatRelativeDaysFromNow(task.dueDate)}
+                      </div>
+                      <div className="mt-1 text-sm text-zinc-500">Owner: {task.ownerName || "Unassigned"}</div>
                     </div>
-                    <div className="mt-1 text-sm text-[var(--muted)]">
-                      Owner: {task.ownerName || "Unassigned"}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="pill font-mono">{task.status}</span>
+                      <AssignTaskOwnerForm
+                        entityId={task.id}
+                        ownerUserId={task.ownerUserId}
+                        returnTo={`/suppliers/${params.id}`}
+                        users={data.users}
+                      />
+                      <TaskStatusForm taskId={task.id} returnTo={`/suppliers/${params.id}`} currentStatus={task.status} />
                     </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">{task.status}</span>
-                    <AssignTaskOwnerForm
-                      entityId={task.id}
-                      ownerUserId={task.ownerUserId}
-                      returnTo={`/suppliers/${params.id}`}
-                      users={data.users}
-                    />
-                    <TaskStatusForm taskId={task.id} returnTo={`/suppliers/${params.id}`} currentStatus={task.status} />
                   </div>
                 </div>
               ))}
             </div>
           </article>
 
-          <article className="hub-panel rounded-[32px] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-              Activity
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Latest timeline</h2>
-            <div className="mt-5 grid gap-3">
+          <article className="panel p-4">
+            <p className="section-kicker">Activity</p>
+            <h2 className="mt-1 text-xl font-semibold text-zinc-950">Latest timeline</h2>
+            <div className="mt-4 grid gap-3">
               {data.activities.map((activity) => (
-                <div key={activity.id} className="hub-subpanel rounded-[24px] p-4">
+                <div key={activity.id} className="subpanel p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="font-medium text-[var(--ink)]">{activity.subject}</div>
-                      <div className="mt-1 text-sm text-[var(--muted)]">
+                      <div className="text-sm font-semibold text-zinc-950">{activity.subject}</div>
+                      <div className="mt-1 text-sm text-zinc-500">
                         {activity.projectName} · {activity.label}
                       </div>
                     </div>
-                    <span className="text-sm text-[var(--muted)]">{formatDate(activity.happenedAt)}</span>
+                    <span className="font-mono text-xs text-zinc-500">{formatDate(activity.happenedAt)}</span>
                   </div>
-                  {activity.body ? <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{activity.body}</p> : null}
+                  {activity.body ? <p className="mt-3 text-sm leading-6 text-zinc-500">{activity.body}</p> : null}
                 </div>
               ))}
             </div>
           </article>
         </div>
 
-        <aside className="grid gap-6">
+        <aside className="grid gap-4">
           <CreateProjectForm
             supplierId={params.id}
             retailers={data.retailers}
@@ -257,19 +235,12 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             users={data.users}
             returnTo={`/suppliers/${params.id}`}
           />
-          <CreateTaskForm
-            supplierId={params.id}
-            returnTo={`/suppliers/${params.id}`}
-            projects={data.projectOptions}
-            users={data.users}
-          />
+          <CreateTaskForm supplierId={params.id} returnTo={`/suppliers/${params.id}`} projects={data.projectOptions} users={data.users} />
           <CreateSupplierContactForm supplierId={params.id} />
           {data.projectOptions.length > 0 ? (
             <CreateActivityForm projects={data.projectOptions} returnTo={`/suppliers/${params.id}`} />
           ) : (
-            <div className="rounded-[28px] border border-[var(--line)] bg-white/75 p-5 text-sm leading-6 text-[var(--muted)]">
-              Add a project first to start logging activities.
-            </div>
+            <div className="panel p-4 text-sm leading-6 text-zinc-500">Add a project first to start logging activities.</div>
           )}
         </aside>
       </section>

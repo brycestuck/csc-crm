@@ -30,22 +30,15 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        "relative flex items-center justify-center overflow-hidden rounded-2xl text-white",
+        "relative flex items-center justify-center overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 text-white",
         className
       )}
       style={{ backgroundColor: color }}
     >
       {imagePath ? (
-        <Image
-          src={imagePath}
-          alt={`${name} avatar`}
-          fill
-          sizes={sizes}
-          className="object-cover"
-          priority={false}
-        />
+        <Image src={imagePath} alt={`${name} avatar`} fill sizes={sizes} className="object-cover" priority={false} />
       ) : (
-        <span className={cn("font-semibold", textClassName)}>{getInitials(name)}</span>
+        <span className={cn("font-mono font-semibold", textClassName)}>{getInitials(name)}</span>
       )}
     </div>
   );
