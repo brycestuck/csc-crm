@@ -4,11 +4,15 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import {
+  assignProjectOwner,
+  assignSupplierOwner,
+  assignTaskOwner,
   createActivity,
   createProject,
   createSupplier,
   createSupplierContact,
   createTask,
+  createUser,
   toggleTaskStatus,
   updateProjectStage,
 } from "@/lib/db/crm";
@@ -17,12 +21,23 @@ import {
   projectPriorities,
   supplierContactRoles,
   taskStatuses,
+  userRoles,
 } from "@/lib/types/domain";
 
 const supplierSchema = z.object({
   name: z.string().trim().min(2),
   summary: z.string().trim().optional(),
   notes: z.string().trim().optional(),
+  ownerUserId: z.string().uuid().optional().or(z.literal("")),
+});
+
+const userSchema = z.object({
+  displayName: z.string().trim().min(2),
+  email: z.string().trim().email(),
+  jobTitle: z.string().trim().optional(),
+  phone: z.string().trim().optional(),
+  bio: z.string().trim().optional(),
+  role: z.enum(userRoles),
 });
 
 const supplierContactSchema = z.object({
@@ -42,6 +57,7 @@ const projectSchema = z.object({
   summary: z.string().trim().optional(),
   priority: z.enum(projectPriorities),
   pipelineStageId: z.string().uuid().optional().or(z.literal("")),
+  ownerUserId: z.string().uuid().optional().or(z.literal("")),
   returnTo: z.string().optional(),
 });
 
@@ -51,6 +67,7 @@ const taskSchema = z.object({
   title: z.string().trim().min(2),
   dueDate: z.string().optional(),
   priority: z.enum(projectPriorities),
+  ownerUserId: z.string().uuid().optional().or(z.literal("")),
 });
 
 const activitySchema = z.object({
@@ -71,17 +88,57 @@ const taskStatusSchema = z.object({
   returnTo: z.string().default("/tasks"),
 });
 
+const supplierOwnerSchema = z.object({
+  supplierId: z.string().uuid(),
+  ownerUserId: z.string().uuid(),
+  returnTo: z.string().default("/suppliers"),
+});
+
+const projectOwnerSchema = z.object({
+  projectId: z.string().uuid(),
+  ownerUserId: z.string().uuid(),
+  returnTo: z.string().default("/projects"),
+});
+
+const taskOwnerSchema = z.object({
+  taskId: z.string().uuid(),
+  ownerUserId: z.string().uuid(),
+  returnTo: z.string().default("/tasks"),
+});
+
 export async function createSupplierAction(formData: FormData) {
   const parsed = supplierSchema.parse({
     name: formData.get("name"),
     summary: formData.get("summary"),
     notes: formData.get("notes"),
+    ownerUserId: formData.get("ownerUserId"),
   });
 
-  const supplierId = await createSupplier(parsed);
+  const supplierId = await createSupplier({
+    ...parsed,
+    ownerUserId: parsed.ownerUserId || undefined,
+  });
   revalidatePath("/");
   revalidatePath("/suppliers");
   redirect(`/suppliers/${supplierId}`);
+}
+
+export async function createUserAction(formData: FormData) {
+  const parsed = userSchema.parse({
+    displayName: formData.get("displayName"),
+    email: formData.get("email"),
+    jobTitle: formData.get("jobTitle"),
+    phone: formData.get("phone"),
+    bio: formData.get("bio"),
+    role: formData.get("role"),
+  });
+
+  const userId = await createUser(parsed);
+  revalidatePath("/team");
+  revalidatePath("/suppliers");
+  revalidatePath("/projects");
+  revalidatePath("/tasks");
+  redirect(`/team/${userId}`);
 }
 
 export async function createSupplierContactAction(formData: FormData) {
@@ -106,6 +163,20 @@ export async function createSupplierContactAction(formData: FormData) {
   redirect(supplierPath);
 }
 
+export async function assignSupplierOwnerAction(formData: FormData) {
+  const parsed = supplierOwnerSchema.parse({
+    supplierId: formData.get("supplierId"),
+    ownerUserId: formData.get("ownerUserId"),
+    returnTo: formData.get("returnTo"),
+  });
+
+  await assignSupplierOwner(parsed);
+  revalidatePath("/");
+  revalidatePath("/suppliers");
+  revalidatePath("/team");
+  revalidatePath(parsed.returnTo);
+}
+
 export async function createProjectAction(formData: FormData) {
   const parsed = projectSchema.parse({
     supplierId: formData.get("supplierId"),
@@ -114,21 +185,38 @@ export async function createProjectAction(formData: FormData) {
     summary: formData.get("summary"),
     priority: formData.get("priority"),
     pipelineStageId: formData.get("pipelineStageId"),
+    ownerUserId: formData.get("ownerUserId"),
     returnTo: formData.get("returnTo"),
   });
 
   await createProject({
     ...parsed,
     pipelineStageId: parsed.pipelineStageId || undefined,
+    ownerUserId: parsed.ownerUserId || undefined,
   });
 
   const supplierPath = `/suppliers/${parsed.supplierId}`;
   const returnTo = parsed.returnTo || supplierPath;
   revalidatePath("/");
   revalidatePath("/projects");
+  revalidatePath("/team");
   revalidatePath(supplierPath);
   revalidatePath(returnTo);
   redirect(returnTo);
+}
+
+export async function assignProjectOwnerAction(formData: FormData) {
+  const parsed = projectOwnerSchema.parse({
+    projectId: formData.get("projectId"),
+    ownerUserId: formData.get("ownerUserId"),
+    returnTo: formData.get("returnTo"),
+  });
+
+  await assignProjectOwner(parsed);
+  revalidatePath("/");
+  revalidatePath("/projects");
+  revalidatePath("/team");
+  revalidatePath(parsed.returnTo);
 }
 
 export async function updateProjectStageAction(formData: FormData) {
@@ -151,6 +239,7 @@ export async function createTaskAction(formData: FormData) {
     title: formData.get("title"),
     dueDate: formData.get("dueDate"),
     priority: formData.get("priority"),
+    ownerUserId: formData.get("ownerUserId"),
   });
 
   const returnTo = String(formData.get("returnTo") || "/tasks");
@@ -158,11 +247,27 @@ export async function createTaskAction(formData: FormData) {
     ...parsed,
     projectId: parsed.projectId || undefined,
     dueDate: parsed.dueDate || undefined,
+    ownerUserId: parsed.ownerUserId || undefined,
   });
   revalidatePath("/");
   revalidatePath("/tasks");
+  revalidatePath("/team");
   revalidatePath(returnTo);
   redirect(returnTo);
+}
+
+export async function assignTaskOwnerAction(formData: FormData) {
+  const parsed = taskOwnerSchema.parse({
+    taskId: formData.get("taskId"),
+    ownerUserId: formData.get("ownerUserId"),
+    returnTo: formData.get("returnTo"),
+  });
+
+  await assignTaskOwner(parsed);
+  revalidatePath("/");
+  revalidatePath("/tasks");
+  revalidatePath("/team");
+  revalidatePath(parsed.returnTo);
 }
 
 export async function toggleTaskStatusAction(formData: FormData) {
@@ -175,6 +280,7 @@ export async function toggleTaskStatusAction(formData: FormData) {
   await toggleTaskStatus(parsed);
   revalidatePath("/");
   revalidatePath("/tasks");
+  revalidatePath("/team");
   revalidatePath(parsed.returnTo);
 }
 

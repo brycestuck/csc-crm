@@ -1,22 +1,30 @@
 import {
+  assignProjectOwnerAction,
+  assignSupplierOwnerAction,
+  assignTaskOwnerAction,
   createActivityAction,
   createProjectAction,
   createSupplierAction,
   createSupplierContactAction,
   createTaskAction,
+  createUserAction,
   toggleTaskStatusAction,
   updateProjectStageAction,
 } from "@/app/actions";
 import { formatActivityTypeLabel } from "@/lib/activities/labels";
-import {
-  activityTypes,
-  projectPriorities,
-  supplierContactRoles,
-} from "@/lib/types/domain";
+import { activityTypes, projectPriorities, supplierContactRoles, userRoles } from "@/lib/types/domain";
 
 type SupplierOption = {
   id: string;
   name: string;
+};
+
+type UserOption = {
+  id: string;
+  displayName: string;
+  role: string;
+  jobTitle: string | null;
+  avatarColor: string;
 };
 
 type ProjectOption = {
@@ -45,20 +53,88 @@ function cardClassName() {
   return "hub-panel grid gap-3 rounded-[28px] p-5";
 }
 
-export function CreateSupplierForm() {
+function ownerOptionLabel(user: UserOption) {
+  return user.jobTitle ? `${user.displayName} · ${user.jobTitle}` : user.displayName;
+}
+
+type OwnerSelectFormProps = {
+  entityIdName: "supplierId" | "projectId" | "taskId";
+  entityId: string;
+  ownerUserId: string | null;
+  returnTo: string;
+  users: UserOption[];
+  action: (formData: FormData) => void | Promise<void>;
+};
+
+function OwnerSelectForm({
+  entityIdName,
+  entityId,
+  ownerUserId,
+  returnTo,
+  users,
+  action,
+}: OwnerSelectFormProps) {
+  return (
+    <form action={action} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name={entityIdName} value={entityId} />
+      <input type="hidden" name="returnTo" value={returnTo} />
+      <select
+        name="ownerUserId"
+        defaultValue={ownerUserId || users[0]?.id || ""}
+        className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm outline-none"
+      >
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {ownerOptionLabel(user)}
+          </option>
+        ))}
+      </select>
+      <button className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm font-medium text-[var(--ink)]">
+        Assign
+      </button>
+    </form>
+  );
+}
+
+export function CreateSupplierForm({ users }: { users: UserOption[] }) {
   return (
     <form action={createSupplierAction} className={cardClassName()}>
       <h2 className="text-lg font-semibold text-[var(--ink)]">Add supplier</h2>
       <input name="name" placeholder="Supplier name" required className={inputClassName()} />
-      <textarea
-        name="summary"
-        placeholder="Short summary"
-        rows={3}
-        className={inputClassName()}
-      />
+      <select name="ownerUserId" defaultValue={users[0]?.id || ""} className={inputClassName()}>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {ownerOptionLabel(user)}
+          </option>
+        ))}
+      </select>
+      <textarea name="summary" placeholder="Short summary" rows={3} className={inputClassName()} />
       <textarea name="notes" placeholder="Internal notes" rows={4} className={inputClassName()} />
       <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
         Create supplier
+      </button>
+    </form>
+  );
+}
+
+export function CreateUserForm() {
+  return (
+    <form action={createUserAction} className={cardClassName()}>
+      <h2 className="text-lg font-semibold text-[var(--ink)]">Add team member</h2>
+      <input name="displayName" placeholder="Full name" required className={inputClassName()} />
+      <input name="email" type="email" placeholder="Email" required className={inputClassName()} />
+      <input name="jobTitle" placeholder="Job title" className={inputClassName()} />
+      <input name="phone" placeholder="Phone" className={inputClassName()} />
+      <select name="role" defaultValue="member" className={inputClassName()}>
+        {userRoles.map((role) => (
+          <option key={role} value={role}>
+            {role}
+          </option>
+        ))}
+      </select>
+      <textarea name="bio" placeholder="Short profile note" rows={4} className={inputClassName()} />
+      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
+        Create profile
       </button>
     </form>
   );
@@ -69,20 +145,11 @@ export function CreateSupplierContactForm({ supplierId }: { supplierId: string }
     <form action={createSupplierContactAction} className={cardClassName()}>
       <input type="hidden" name="supplierId" value={supplierId} />
       <h3 className="text-lg font-semibold text-[var(--ink)]">Add supplier contact</h3>
-      <input
-        name="fullName"
-        placeholder="Full name"
-        required
-        className={inputClassName()}
-      />
+      <input name="fullName" placeholder="Full name" required className={inputClassName()} />
       <input name="title" placeholder="Title" className={inputClassName()} />
       <input name="email" type="email" placeholder="Email" className={inputClassName()} />
       <input name="phone" placeholder="Phone" className={inputClassName()} />
-      <select
-        name="contactRole"
-        defaultValue="sales"
-        className={inputClassName()}
-      >
+      <select name="contactRole" defaultValue="sales" className={inputClassName()}>
         {supplierContactRoles.map((role) => (
           <option key={role} value={role}>
             {role}
@@ -97,17 +164,23 @@ export function CreateSupplierContactForm({ supplierId }: { supplierId: string }
   );
 }
 
+export function AssignSupplierOwnerForm(props: Omit<OwnerSelectFormProps, "entityIdName" | "action">) {
+  return <OwnerSelectForm {...props} entityIdName="supplierId" action={assignSupplierOwnerAction} />;
+}
+
 export function CreateProjectForm({
   supplierId,
   supplierOptions,
   retailers,
   stages,
+  users,
   returnTo,
 }: {
   supplierId?: string;
   supplierOptions?: SupplierOption[];
   retailers: RetailerOption[];
   stages: StageOption[];
+  users: UserOption[];
   returnTo: string;
 }) {
   return (
@@ -127,6 +200,13 @@ export function CreateProjectForm({
           ))}
         </select>
       ) : null}
+      <select name="ownerUserId" defaultValue={users[0]?.id || ""} className={inputClassName()}>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {ownerOptionLabel(user)}
+          </option>
+        ))}
+      </select>
       <input name="name" placeholder="Project name" required className={inputClassName()} />
       <select name="retailerId" required defaultValue="" className={inputClassName()}>
         <option value="" disabled>
@@ -138,11 +218,7 @@ export function CreateProjectForm({
           </option>
         ))}
       </select>
-      <select
-        name="pipelineStageId"
-        defaultValue={stages[0]?.id || ""}
-        className={inputClassName()}
-      >
+      <select name="pipelineStageId" defaultValue={stages[0]?.id || ""} className={inputClassName()}>
         {stages.map((stage) => (
           <option key={stage.id} value={stage.id}>
             {stage.name}
@@ -164,16 +240,22 @@ export function CreateProjectForm({
   );
 }
 
+export function AssignProjectOwnerForm(props: Omit<OwnerSelectFormProps, "entityIdName" | "action">) {
+  return <OwnerSelectForm {...props} entityIdName="projectId" action={assignProjectOwnerAction} />;
+}
+
 export function CreateTaskForm({
   supplierId,
   supplierOptions,
   returnTo,
   projects,
+  users,
 }: {
   supplierId?: string;
   supplierOptions?: SupplierOption[];
   returnTo: string;
   projects: ProjectOption[];
+  users: UserOption[];
 }) {
   return (
     <form action={createTaskAction} className={cardClassName()}>
@@ -192,6 +274,13 @@ export function CreateTaskForm({
           ))}
         </select>
       ) : null}
+      <select name="ownerUserId" defaultValue={users[0]?.id || ""} className={inputClassName()}>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {ownerOptionLabel(user)}
+          </option>
+        ))}
+      </select>
       <input name="title" placeholder="Task title" required className={inputClassName()} />
       <select name="projectId" defaultValue="" className={inputClassName()}>
         <option value="">No project</option>
@@ -214,6 +303,10 @@ export function CreateTaskForm({
       </button>
     </form>
   );
+}
+
+export function AssignTaskOwnerForm(props: Omit<OwnerSelectFormProps, "entityIdName" | "action">) {
+  return <OwnerSelectForm {...props} entityIdName="taskId" action={assignTaskOwnerAction} />;
 }
 
 export function CreateActivityForm({

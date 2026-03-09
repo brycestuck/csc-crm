@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
 import {
+  AssignProjectOwnerForm,
+  AssignSupplierOwnerForm,
+  AssignTaskOwnerForm,
   CreateActivityForm,
   CreateProjectForm,
   CreateSupplierContactForm,
@@ -37,6 +40,9 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             {data.supplier.notes ? (
               <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--muted)]">{data.supplier.notes}</p>
             ) : null}
+            <div className="mt-4 text-sm text-[var(--muted)]">
+              Owner: {data.supplier.ownerName || "Unassigned"}
+            </div>
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.projects.length} projects</span>
@@ -44,6 +50,14 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.activities.length} activities</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.contacts.length} contacts</span>
           </div>
+        </div>
+        <div className="mt-5">
+          <AssignSupplierOwnerForm
+            entityId={params.id}
+            ownerUserId={data.supplier.ownerUserId}
+            returnTo={`/suppliers/${params.id}`}
+            users={data.users}
+          />
         </div>
       </section>
 
@@ -108,18 +122,27 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
                     </span>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-[var(--muted)]">
+                    <span className="rounded-full bg-white px-3 py-2">
+                      Owner: {project.ownerName || "Unassigned"}
+                    </span>
                     <span className="rounded-full bg-white px-3 py-2">Priority: {project.priority}</span>
                     <span className="rounded-full bg-white px-3 py-2">Status: {project.status}</span>
                     {project.modEffectiveDate ? (
                       <span className="rounded-full bg-white px-3 py-2">Mod date: {formatDate(project.modEffectiveDate)}</span>
                     ) : null}
                   </div>
-                  <div className="mt-4">
+                  <div className="mt-4 flex flex-wrap gap-3">
                     <ProjectStageForm
                       projectId={project.id}
                       returnTo={`/suppliers/${params.id}`}
                       stages={data.stages}
                       currentStageId={project.stageId}
+                    />
+                    <AssignProjectOwnerForm
+                      entityId={project.id}
+                      ownerUserId={project.ownerUserId}
+                      returnTo={`/suppliers/${params.id}`}
+                      users={data.users}
                     />
                   </div>
                 </div>
@@ -140,9 +163,18 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
                     <div className="mt-1 text-sm text-[var(--muted)]">
                       {task.projectName || "No project"} · {formatRelativeDaysFromNow(task.dueDate)}
                     </div>
+                    <div className="mt-1 text-sm text-[var(--muted)]">
+                      Owner: {task.ownerName || "Unassigned"}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">{task.status}</span>
+                    <AssignTaskOwnerForm
+                      entityId={task.id}
+                      ownerUserId={task.ownerUserId}
+                      returnTo={`/suppliers/${params.id}`}
+                      users={data.users}
+                    />
                     <TaskStatusForm taskId={task.id} returnTo={`/suppliers/${params.id}`} currentStatus={task.status} />
                   </div>
                 </div>
@@ -179,12 +211,14 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             supplierId={params.id}
             retailers={data.retailers}
             stages={data.stages}
+            users={data.users}
             returnTo={`/suppliers/${params.id}`}
           />
           <CreateTaskForm
             supplierId={params.id}
             returnTo={`/suppliers/${params.id}`}
             projects={data.projectOptions}
+            users={data.users}
           />
           <CreateSupplierContactForm supplierId={params.id} />
           {data.projectOptions.length > 0 ? (

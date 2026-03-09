@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, LayoutDashboard, ScrollText, Target, Users2 } from "lucide-react";
+import { ClipboardList, LayoutDashboard, ScrollText, Target, User, Users2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/projects", label: "Projects", icon: Target },
   { href: "/tasks", label: "Tasks", icon: ClipboardList },
   { href: "/activity", label: "Activity", icon: ScrollText },
+  { href: "/team", label: "Team", icon: User },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

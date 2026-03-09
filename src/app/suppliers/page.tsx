@@ -12,8 +12,8 @@ export default async function SuppliersPage() {
     return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
-  const suppliers = await getSuppliersPageData();
-  const totals = suppliers.reduce(
+  const data = await getSuppliersPageData();
+  const totals = data.suppliers.reduce(
     (acc, supplier) => ({
       projects: acc.projects + supplier.projectCount,
       openTasks: acc.openTasks + supplier.openTaskCount,
@@ -31,14 +31,14 @@ export default async function SuppliersPage() {
           </p>
           <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Supplier workspace</h1>
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{suppliers.length} suppliers</span>
+            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.suppliers.length} suppliers</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.projects} projects</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.openTasks} open tasks</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.contacts} contacts</span>
           </div>
         </div>
         <div className="grid gap-4">
-          {suppliers.map((supplier) => (
+          {data.suppliers.map((supplier) => (
             <Link
               key={supplier.id}
               href={`/suppliers/${supplier.id}`}
@@ -50,6 +50,9 @@ export default async function SuppliersPage() {
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">
                     {supplier.summary || "No summary yet."}
                   </p>
+                  <div className="mt-3 text-sm text-[var(--muted)]">
+                    Owner: {supplier.ownerName || "Unassigned"}
+                  </div>
                 </div>
                 <div className="text-right text-xs text-[var(--muted)]">
                   Updated
@@ -68,7 +71,7 @@ export default async function SuppliersPage() {
         </div>
       </section>
       <aside>
-        <CreateSupplierForm />
+        <CreateSupplierForm users={data.users} />
       </aside>
     </main>
   );

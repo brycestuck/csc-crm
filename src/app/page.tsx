@@ -11,7 +11,7 @@ export default async function Home() {
     return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
-  const [data, suppliers] = await Promise.all([getDashboardData(), getSuppliersPageData()]);
+  const [data, supplierData] = await Promise.all([getDashboardData(), getSuppliersPageData()]);
 
   return (
     <main className="grid gap-6">
@@ -89,6 +89,9 @@ export default async function Home() {
                   {task.supplierName || "No supplier"} · {task.projectName || "No project"} ·{" "}
                   {formatRelativeDaysFromNow(task.dueDate)}
                 </div>
+                <div className="mt-2 text-sm text-[var(--muted)]">
+                  Owner: {task.ownerName || "Unassigned"}
+                </div>
               </div>
             ))}
           </div>
@@ -164,7 +167,7 @@ export default async function Home() {
           </Link>
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {suppliers.slice(0, 6).map((supplier) => (
+          {supplierData.suppliers.slice(0, 6).map((supplier) => (
             <Link
               key={supplier.id}
               href={`/suppliers/${supplier.id}`}
@@ -174,6 +177,7 @@ export default async function Home() {
               <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
                 {supplier.summary || "No summary yet."}
               </div>
+              <div className="mt-2 text-sm text-[var(--muted)]">Owner: {supplier.ownerName || "Unassigned"}</div>
               <div className="mt-4 flex flex-wrap gap-2 text-sm text-[var(--muted)]">
                 <span className="rounded-full bg-white px-3 py-2">{supplier.projectCount} projects</span>
                 <span className="rounded-full bg-white px-3 py-2">{supplier.openTaskCount} open tasks</span>

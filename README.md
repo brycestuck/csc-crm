@@ -5,6 +5,7 @@ Operational supplier-first workspace for Creative Sales Solutions, built for Rep
 ## Current product slice
 
 - Dashboard with live metrics from Postgres
+- Team page with user profiles and ownership views
 - Supplier workspace with:
   - supplier records
   - supplier contacts
@@ -62,6 +63,7 @@ npm run db:push
 ## Notes
 
 - The first launch into an empty database seeds pipeline stages, core retailers, a default admin user, sample suppliers, sample projects, sample tasks, sample activities, sample buyers, and supplier contacts.
+- After pulling schema changes, run `npm run db:push` again so new columns like team profile fields are applied to Replit Postgres.
 - Finance schema additions are present but intentionally unused by CRM UI and routes at this stage.
 - No finance-specific screens, jobs, or endpoints are included yet.
 - Auth is not implemented yet. The current operational slice assumes a shared internal workspace and uses a seeded admin user for record attribution.

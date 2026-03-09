@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
 import { formatActivityTypeLabel } from "@/lib/activities/labels";
 import { getDb, getPool } from "@/lib/db/client";
 import {
@@ -22,6 +22,7 @@ import {
   type ProjectStatus,
   type SupplierContactRole,
   type TaskStatus,
+  type UserRole,
 } from "@/lib/types/domain";
 
 const DEFAULT_RETAILERS = [
@@ -35,6 +36,9 @@ const DEFAULT_RETAILERS = [
 const DEFAULT_USER = {
   email: "admin@creativesales.local",
   displayName: "CSC Admin",
+  jobTitle: "Workspace Admin",
+  bio: "Default workspace operator until the real team roster is added.",
+  avatarColor: "#8863b7",
   role: "admin" as const,
 };
 
@@ -51,7 +55,17 @@ type Option = {
   name: string;
 };
 
-type ProjectOption = Option & {
+type UserOption = {
+  id: string;
+  displayName: string;
+  role: UserRole;
+  jobTitle: string | null;
+  avatarColor: string;
+};
+
+type ProjectOption = {
+  id: string;
+  name: string;
   supplierId: string;
   supplierName: string;
 };
@@ -88,6 +102,23 @@ export async function getWorkspaceStatus(): Promise<WorkspaceStatus> {
       return {
         state: "schema-missing",
         message: "Database connected, but schema is missing. Run npm run db:push in the Replit shell.",
+      };
+    }
+
+    const userProfileColumns = await pool.query<{ count: number }>(
+      `
+        select count(*)::int as count
+        from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'users'
+          and column_name in ('job_title', 'phone', 'bio', 'avatar_color')
+      `
+    );
+
+    if ((userProfileColumns.rows[0]?.count ?? 0) < 4) {
+      return {
+        state: "schema-missing",
+        message: "The Hub schema needs an update. Run npm run db:push in the Replit shell to add team profile fields.",
       };
     }
 
@@ -366,8 +397,8 @@ export async function ensureWorkspaceSeeded() {
   }
 
   workspaceSeedPromise = (async () => {
-  const status = await getWorkspaceStatus();
-  if (status.state !== "ready") {
+    const status = await getWorkspaceStatus();
+    if (status.state !== "ready") {
       return status;
     }
 
@@ -404,6 +435,22 @@ async function getRetailerOptions(): Promise<Option[]> {
     .from(retailers)
     .where(isNull(retailers.deletedAt))
     .orderBy(asc(retailers.name));
+}
+
+async function getUserOptions(): Promise<UserOption[]> {
+  const db = getDb();
+
+  return db
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      role: users.role,
+      jobTitle: users.jobTitle,
+      avatarColor: users.avatarColor,
+    })
+    .from(users)
+    .where(and(isNull(users.deletedAt), eq(users.isActive, true)))
+    .orderBy(asc(users.displayName));
 }
 
 async function getStageOptions() {
@@ -450,13 +497,7 @@ export async function getDashboardData() {
       db
         .select({ count: sql<number>`count(*)::int` })
         .from(tasks)
-        .where(
-          and(
-            isNull(tasks.deletedAt),
-            ne(tasks.status, "done"),
-            sql`${tasks.dueDate} < current_date`
-          )
-        ),
+        .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done"), sql`${tasks.dueDate} < current_date`)),
       db
         .select({ count: sql<number>`count(*)::int` })
         .from(tasks)
@@ -477,10 +518,12 @@ export async function getDashboardData() {
       status: tasks.status,
       projectName: projects.name,
       supplierName: suppliers.name,
+      ownerName: users.displayName,
     })
     .from(tasks)
     .leftJoin(projects, eq(tasks.projectId, projects.id))
     .leftJoin(suppliers, eq(tasks.supplierId, suppliers.id))
+    .leftJoin(users, eq(tasks.ownerUserId, users.id))
     .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
     .orderBy(sql`${tasks.dueDate} is null`, asc(tasks.dueDate), asc(tasks.createdAt))
     .limit(8);
@@ -539,55 +582,53 @@ export async function getSuppliersPageData() {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
-  const supplierRows = await db
-    .select({
-      id: suppliers.id,
-      name: suppliers.name,
-      summary: suppliers.summary,
-      notes: suppliers.notes,
-      updatedAt: suppliers.updatedAt,
-    })
-    .from(suppliers)
-    .where(isNull(suppliers.deletedAt))
-    .orderBy(asc(suppliers.name));
-
-  const projectCounts = await db
-    .select({
-      supplierId: projects.supplierId,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(projects)
-    .where(isNull(projects.deletedAt))
-    .groupBy(projects.supplierId);
-
-  const taskCounts = await db
-    .select({
-      supplierId: tasks.supplierId,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(tasks)
-    .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
-    .groupBy(tasks.supplierId);
-
-  const contactCounts = await db
-    .select({
-      supplierId: supplierContacts.supplierId,
-      count: sql<number>`count(*)::int`,
-    })
-    .from(supplierContacts)
-    .where(isNull(supplierContacts.deletedAt))
-    .groupBy(supplierContacts.supplierId);
+  const [supplierRows, userRows, projectCounts, taskCounts, contactCounts] = await Promise.all([
+    db
+      .select({
+        id: suppliers.id,
+        name: suppliers.name,
+        summary: suppliers.summary,
+        notes: suppliers.notes,
+        updatedAt: suppliers.updatedAt,
+        ownerUserId: suppliers.ownerUserId,
+        ownerName: users.displayName,
+        ownerColor: users.avatarColor,
+      })
+      .from(suppliers)
+      .leftJoin(users, eq(suppliers.ownerUserId, users.id))
+      .where(isNull(suppliers.deletedAt))
+      .orderBy(asc(suppliers.name)),
+    getUserOptions(),
+    db
+      .select({ supplierId: projects.supplierId, count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(isNull(projects.deletedAt))
+      .groupBy(projects.supplierId),
+    db
+      .select({ supplierId: tasks.supplierId, count: sql<number>`count(*)::int` })
+      .from(tasks)
+      .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
+      .groupBy(tasks.supplierId),
+    db
+      .select({ supplierId: supplierContacts.supplierId, count: sql<number>`count(*)::int` })
+      .from(supplierContacts)
+      .where(isNull(supplierContacts.deletedAt))
+      .groupBy(supplierContacts.supplierId),
+  ]);
 
   const projectCountBySupplier = new Map(projectCounts.map((row) => [row.supplierId, row.count]));
   const taskCountBySupplier = new Map(taskCounts.map((row) => [row.supplierId, row.count]));
   const contactCountBySupplier = new Map(contactCounts.map((row) => [row.supplierId, row.count]));
 
-  return supplierRows.map((supplier) => ({
-    ...supplier,
-    projectCount: projectCountBySupplier.get(supplier.id) ?? 0,
-    openTaskCount: taskCountBySupplier.get(supplier.id) ?? 0,
-    contactCount: contactCountBySupplier.get(supplier.id) ?? 0,
-  }));
+  return {
+    users: userRows,
+    suppliers: supplierRows.map((supplier) => ({
+      ...supplier,
+      projectCount: projectCountBySupplier.get(supplier.id) ?? 0,
+      openTaskCount: taskCountBySupplier.get(supplier.id) ?? 0,
+      contactCount: contactCountBySupplier.get(supplier.id) ?? 0,
+    })),
+  };
 }
 
 export async function getSupplierDetailData(supplierId: string) {
@@ -595,8 +636,18 @@ export async function getSupplierDetailData(supplierId: string) {
   const db = getDb();
 
   const supplier = await db
-    .select()
+    .select({
+      id: suppliers.id,
+      name: suppliers.name,
+      summary: suppliers.summary,
+      notes: suppliers.notes,
+      ownerUserId: suppliers.ownerUserId,
+      ownerName: users.displayName,
+      ownerColor: users.avatarColor,
+      updatedAt: suppliers.updatedAt,
+    })
     .from(suppliers)
+    .leftJoin(users, eq(suppliers.ownerUserId, users.id))
     .where(and(eq(suppliers.id, supplierId), isNull(suppliers.deletedAt)))
     .limit(1);
 
@@ -604,75 +655,90 @@ export async function getSupplierDetailData(supplierId: string) {
     return null;
   }
 
-  const [projectRows, taskRows, activityRows, retailerRows, stageRows, contactRows] = await Promise.all([
-    db
-      .select({
-        id: projects.id,
-        name: projects.name,
-        summary: projects.summary,
-        status: projects.status,
-        priority: projects.priority,
-        stageId: pipelineStages.id,
-        stageName: pipelineStages.name,
-        stageColor: pipelineStages.color,
-        walmartWeekTarget: projects.walmartWeekTarget,
-        modEffectiveDate: projects.modEffectiveDate,
-        retailerName: retailers.name,
-        buyerName: buyers.fullName,
-      })
-      .from(projects)
-      .innerJoin(retailers, eq(projects.retailerId, retailers.id))
-      .leftJoin(pipelineStages, eq(projects.pipelineStageId, pipelineStages.id))
-      .leftJoin(buyers, eq(projects.buyerId, buyers.id))
-      .where(and(eq(projects.supplierId, supplierId), isNull(projects.deletedAt)))
-      .orderBy(desc(projects.updatedAt)),
-    db
-      .select({
-        id: tasks.id,
-        title: tasks.title,
-        dueDate: tasks.dueDate,
-        status: tasks.status,
-        priority: tasks.priority,
-        projectId: tasks.projectId,
-        projectName: projects.name,
-      })
-      .from(tasks)
-      .leftJoin(projects, eq(tasks.projectId, projects.id))
-      .where(and(eq(tasks.supplierId, supplierId), isNull(tasks.deletedAt)))
-      .orderBy(sql`case when ${tasks.status} = 'done' then 1 else 0 end`, asc(tasks.dueDate), asc(tasks.createdAt)),
-    db
-      .select({
-        id: activities.id,
-        subject: activities.subject,
-        body: activities.body,
-        activityType: activities.activityType,
-        happenedAt: activities.happenedAt,
-        projectName: projects.name,
-      })
-      .from(activities)
-      .innerJoin(projects, eq(activities.projectId, projects.id))
-      .where(and(eq(projects.supplierId, supplierId), isNull(activities.deletedAt), isNull(projects.deletedAt)))
-      .orderBy(desc(activities.happenedAt))
-      .limit(20),
-    getRetailerOptions(),
-    getStageOptions(),
-    db
-      .select({
-        id: supplierContacts.id,
-        fullName: supplierContacts.fullName,
-        title: supplierContacts.title,
-        email: supplierContacts.email,
-        phone: supplierContacts.phone,
-        contactRole: supplierContacts.contactRole,
-        notes: supplierContacts.notes,
-      })
-      .from(supplierContacts)
-      .where(and(eq(supplierContacts.supplierId, supplierId), isNull(supplierContacts.deletedAt)))
-      .orderBy(asc(supplierContacts.fullName)),
-  ]);
+  const [projectRows, taskRows, activityRows, retailerRows, stageRows, contactRows, userRows] =
+    await Promise.all([
+      db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          summary: projects.summary,
+          status: projects.status,
+          priority: projects.priority,
+          stageId: pipelineStages.id,
+          stageName: pipelineStages.name,
+          stageColor: pipelineStages.color,
+          walmartWeekTarget: projects.walmartWeekTarget,
+          modEffectiveDate: projects.modEffectiveDate,
+          retailerName: retailers.name,
+          buyerName: buyers.fullName,
+          ownerUserId: projects.ownerUserId,
+          ownerName: users.displayName,
+          ownerColor: users.avatarColor,
+        })
+        .from(projects)
+        .innerJoin(retailers, eq(projects.retailerId, retailers.id))
+        .leftJoin(pipelineStages, eq(projects.pipelineStageId, pipelineStages.id))
+        .leftJoin(buyers, eq(projects.buyerId, buyers.id))
+        .leftJoin(users, eq(projects.ownerUserId, users.id))
+        .where(and(eq(projects.supplierId, supplierId), isNull(projects.deletedAt)))
+        .orderBy(desc(projects.updatedAt)),
+      db
+        .select({
+          id: tasks.id,
+          title: tasks.title,
+          dueDate: tasks.dueDate,
+          status: tasks.status,
+          priority: tasks.priority,
+          projectId: tasks.projectId,
+          projectName: projects.name,
+          ownerUserId: tasks.ownerUserId,
+          ownerName: users.displayName,
+          ownerColor: users.avatarColor,
+        })
+        .from(tasks)
+        .leftJoin(projects, eq(tasks.projectId, projects.id))
+        .leftJoin(users, eq(tasks.ownerUserId, users.id))
+        .where(and(eq(tasks.supplierId, supplierId), isNull(tasks.deletedAt)))
+        .orderBy(
+          sql`case when ${tasks.status} = 'done' then 1 else 0 end`,
+          asc(tasks.dueDate),
+          asc(tasks.createdAt)
+        ),
+      db
+        .select({
+          id: activities.id,
+          subject: activities.subject,
+          body: activities.body,
+          activityType: activities.activityType,
+          happenedAt: activities.happenedAt,
+          projectName: projects.name,
+        })
+        .from(activities)
+        .innerJoin(projects, eq(activities.projectId, projects.id))
+        .where(and(eq(projects.supplierId, supplierId), isNull(activities.deletedAt), isNull(projects.deletedAt)))
+        .orderBy(desc(activities.happenedAt))
+        .limit(20),
+      getRetailerOptions(),
+      getStageOptions(),
+      db
+        .select({
+          id: supplierContacts.id,
+          fullName: supplierContacts.fullName,
+          title: supplierContacts.title,
+          email: supplierContacts.email,
+          phone: supplierContacts.phone,
+          contactRole: supplierContacts.contactRole,
+          notes: supplierContacts.notes,
+        })
+        .from(supplierContacts)
+        .where(and(eq(supplierContacts.supplierId, supplierId), isNull(supplierContacts.deletedAt)))
+        .orderBy(asc(supplierContacts.fullName)),
+      getUserOptions(),
+    ]);
 
   return {
     supplier: supplier[0],
+    users: userRows,
     contacts: contactRows,
     projects: projectRows,
     tasks: taskRows,
@@ -695,7 +761,7 @@ export async function getProjectsPageData() {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
-  const [projectRows, stageRows, supplierRows, retailerRows] = await Promise.all([
+  const [projectRows, stageRows, supplierRows, retailerRows, userRows] = await Promise.all([
     db
       .select({
         id: projects.id,
@@ -706,6 +772,9 @@ export async function getProjectsPageData() {
         supplierName: suppliers.name,
         retailerName: retailers.name,
         buyerName: buyers.fullName,
+        ownerUserId: projects.ownerUserId,
+        ownerName: users.displayName,
+        ownerColor: users.avatarColor,
         stageId: pipelineStages.id,
         stageName: pipelineStages.name,
         stageColor: pipelineStages.color,
@@ -715,11 +784,13 @@ export async function getProjectsPageData() {
       .innerJoin(retailers, eq(projects.retailerId, retailers.id))
       .leftJoin(pipelineStages, eq(projects.pipelineStageId, pipelineStages.id))
       .leftJoin(buyers, eq(projects.buyerId, buyers.id))
+      .leftJoin(users, eq(projects.ownerUserId, users.id))
       .where(and(isNull(projects.deletedAt), isNull(suppliers.deletedAt), isNull(retailers.deletedAt)))
       .orderBy(asc(suppliers.name), asc(projects.name)),
     getStageOptions(),
     getSupplierOptions(),
     getRetailerOptions(),
+    getUserOptions(),
   ]);
 
   const stageSummary = stageRows.map((stage) => ({
@@ -732,6 +803,7 @@ export async function getProjectsPageData() {
     stages: stageRows,
     suppliers: supplierRows,
     retailers: retailerRows,
+    users: userRows,
     stageSummary,
   };
 }
@@ -740,7 +812,7 @@ export async function getTasksPageData() {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
-  const [taskRows, supplierRows, projectRows] = await Promise.all([
+  const [taskRows, supplierRows, projectRows, userRows] = await Promise.all([
     db
       .select({
         id: tasks.id,
@@ -750,10 +822,14 @@ export async function getTasksPageData() {
         priority: tasks.priority,
         supplierName: suppliers.name,
         projectName: projects.name,
+        ownerUserId: tasks.ownerUserId,
+        ownerName: users.displayName,
+        ownerColor: users.avatarColor,
       })
       .from(tasks)
       .leftJoin(suppliers, eq(tasks.supplierId, suppliers.id))
       .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .leftJoin(users, eq(tasks.ownerUserId, users.id))
       .where(isNull(tasks.deletedAt))
       .orderBy(
         sql`case when ${tasks.status} = 'done' then 1 else 0 end`,
@@ -763,12 +839,14 @@ export async function getTasksPageData() {
       ),
     getSupplierOptions(),
     getProjectOptions(),
+    getUserOptions(),
   ]);
 
   return {
     tasks: taskRows,
     suppliers: supplierRows,
     projects: projectRows,
+    users: userRows,
     metrics: {
       openCount: taskRows.filter((task) => task.status !== "done").length,
       doneCount: taskRows.filter((task) => task.status === "done").length,
@@ -823,10 +901,179 @@ export async function getActivitiesPageData() {
   };
 }
 
-export async function createSupplier(input: { name: string; summary?: string; notes?: string }) {
+export async function getTeamPageData() {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const ownerUserId = await getDefaultUserId();
+
+  const [teamRows, supplierCounts, projectCounts, taskCounts] = await Promise.all([
+    db
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        email: users.email,
+        jobTitle: users.jobTitle,
+        phone: users.phone,
+        bio: users.bio,
+        avatarColor: users.avatarColor,
+        role: users.role,
+      })
+      .from(users)
+      .where(and(isNull(users.deletedAt), eq(users.isActive, true)))
+      .orderBy(asc(users.displayName)),
+    db
+      .select({ ownerUserId: suppliers.ownerUserId, count: sql<number>`count(*)::int` })
+      .from(suppliers)
+      .where(isNull(suppliers.deletedAt))
+      .groupBy(suppliers.ownerUserId),
+    db
+      .select({ ownerUserId: projects.ownerUserId, count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(and(isNull(projects.deletedAt), eq(projects.status, "active")))
+      .groupBy(projects.ownerUserId),
+    db
+      .select({ ownerUserId: tasks.ownerUserId, count: sql<number>`count(*)::int` })
+      .from(tasks)
+      .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
+      .groupBy(tasks.ownerUserId),
+  ]);
+
+  const supplierCountByOwner = new Map(supplierCounts.map((row) => [row.ownerUserId, row.count]));
+  const projectCountByOwner = new Map(projectCounts.map((row) => [row.ownerUserId, row.count]));
+  const taskCountByOwner = new Map(taskCounts.map((row) => [row.ownerUserId, row.count]));
+
+  return {
+    users: teamRows.map((user) => ({
+      ...user,
+      supplierCount: supplierCountByOwner.get(user.id) ?? 0,
+      activeProjectCount: projectCountByOwner.get(user.id) ?? 0,
+      openTaskCount: taskCountByOwner.get(user.id) ?? 0,
+    })),
+  };
+}
+
+export async function getTeamMemberDetailData(userId: string) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  const user = await db
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      email: users.email,
+      jobTitle: users.jobTitle,
+      phone: users.phone,
+      bio: users.bio,
+      avatarColor: users.avatarColor,
+      role: users.role,
+    })
+    .from(users)
+    .where(and(eq(users.id, userId), isNull(users.deletedAt), eq(users.isActive, true)))
+    .limit(1);
+
+  if (!user[0]) {
+    return null;
+  }
+
+  const [supplierRows, projectRows, taskRows, activityRows] = await Promise.all([
+    db
+      .select({
+        id: suppliers.id,
+        name: suppliers.name,
+        summary: suppliers.summary,
+        updatedAt: suppliers.updatedAt,
+      })
+      .from(suppliers)
+      .where(and(eq(suppliers.ownerUserId, userId), isNull(suppliers.deletedAt)))
+      .orderBy(asc(suppliers.name)),
+    db
+      .select({
+        id: projects.id,
+        name: projects.name,
+        summary: projects.summary,
+        status: projects.status,
+        priority: projects.priority,
+        retailerName: retailers.name,
+        supplierName: suppliers.name,
+        stageName: pipelineStages.name,
+        stageColor: pipelineStages.color,
+      })
+      .from(projects)
+      .innerJoin(suppliers, eq(projects.supplierId, suppliers.id))
+      .innerJoin(retailers, eq(projects.retailerId, retailers.id))
+      .leftJoin(pipelineStages, eq(projects.pipelineStageId, pipelineStages.id))
+      .where(and(eq(projects.ownerUserId, userId), isNull(projects.deletedAt)))
+      .orderBy(desc(projects.updatedAt)),
+    db
+      .select({
+        id: tasks.id,
+        title: tasks.title,
+        dueDate: tasks.dueDate,
+        status: tasks.status,
+        priority: tasks.priority,
+        supplierName: suppliers.name,
+        projectName: projects.name,
+      })
+      .from(tasks)
+      .leftJoin(suppliers, eq(tasks.supplierId, suppliers.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .where(and(eq(tasks.ownerUserId, userId), isNull(tasks.deletedAt)))
+      .orderBy(
+        sql`case when ${tasks.status} = 'done' then 1 else 0 end`,
+        sql`${tasks.dueDate} is null`,
+        asc(tasks.dueDate),
+        asc(tasks.createdAt)
+      ),
+    db
+      .select({
+        id: activities.id,
+        subject: activities.subject,
+        body: activities.body,
+        activityType: activities.activityType,
+        happenedAt: activities.happenedAt,
+        supplierName: suppliers.name,
+        projectName: projects.name,
+      })
+      .from(activities)
+      .innerJoin(projects, eq(activities.projectId, projects.id))
+      .innerJoin(suppliers, eq(projects.supplierId, suppliers.id))
+      .where(
+        and(
+          isNull(activities.deletedAt),
+          isNull(projects.deletedAt),
+          isNull(suppliers.deletedAt),
+          or(eq(activities.userId, userId), eq(projects.ownerUserId, userId))
+        )
+      )
+      .orderBy(desc(activities.happenedAt))
+      .limit(20),
+  ]);
+
+  return {
+    user: user[0],
+    metrics: {
+      supplierCount: supplierRows.length,
+      projectCount: projectRows.length,
+      taskCount: taskRows.filter((task) => task.status !== "done").length,
+    },
+    suppliers: supplierRows,
+    projects: projectRows,
+    tasks: taskRows,
+    activities: activityRows.map((activity) => ({
+      ...activity,
+      label: formatActivityTypeLabel(activity.activityType),
+    })),
+  };
+}
+
+export async function createSupplier(input: {
+  name: string;
+  summary?: string;
+  notes?: string;
+  ownerUserId?: string;
+}) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+  const ownerUserId = input.ownerUserId || (await getDefaultUserId());
 
   const inserted = await db
     .insert(suppliers)
@@ -839,6 +1086,16 @@ export async function createSupplier(input: { name: string; summary?: string; no
     .returning({ id: suppliers.id });
 
   return inserted[0].id;
+}
+
+export async function assignSupplierOwner(input: { supplierId: string; ownerUserId: string }) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  await db
+    .update(suppliers)
+    .set({ ownerUserId: input.ownerUserId, updatedAt: new Date() })
+    .where(eq(suppliers.id, input.supplierId));
 }
 
 export async function createSupplierContact(input: {
@@ -864,6 +1121,36 @@ export async function createSupplierContact(input: {
   });
 }
 
+export async function createUser(input: {
+  displayName: string;
+  email: string;
+  jobTitle?: string;
+  phone?: string;
+  bio?: string;
+  role: UserRole;
+}) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  const colorPool = ["#8863b7", "#5f4689", "#7c6ab0", "#b08ccb", "#7c89d9", "#6b8ea6"];
+  const color = colorPool[input.displayName.length % colorPool.length];
+
+  const inserted = await db
+    .insert(users)
+    .values({
+      displayName: input.displayName,
+      email: input.email,
+      jobTitle: input.jobTitle || null,
+      phone: input.phone || null,
+      bio: input.bio || null,
+      avatarColor: color,
+      role: input.role,
+    })
+    .returning({ id: users.id });
+
+  return inserted[0].id;
+}
+
 export async function createProject(input: {
   supplierId: string;
   name: string;
@@ -872,10 +1159,11 @@ export async function createProject(input: {
   priority: ProjectPriority;
   pipelineStageId?: string;
   status?: ProjectStatus;
+  ownerUserId?: string;
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const ownerUserId = await getDefaultUserId();
+  const ownerUserId = input.ownerUserId || (await getDefaultUserId());
 
   let pipelineStageId = input.pipelineStageId;
   if (!pipelineStageId) {
@@ -913,6 +1201,16 @@ export async function createProject(input: {
   return inserted[0].id;
 }
 
+export async function assignProjectOwner(input: { projectId: string; ownerUserId: string }) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  await db
+    .update(projects)
+    .set({ ownerUserId: input.ownerUserId, updatedAt: new Date() })
+    .where(eq(projects.id, input.projectId));
+}
+
 export async function updateProjectStage(input: { projectId: string; pipelineStageId: string }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
@@ -948,20 +1246,18 @@ export async function createTask(input: {
   title: string;
   dueDate?: string;
   priority: ProjectPriority;
+  ownerUserId?: string;
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const ownerUserId = await getDefaultUserId();
+  const ownerUserId = input.ownerUserId || (await getDefaultUserId());
 
   let supplierId = input.supplierId;
   let retailerId: string | null = null;
 
   if (input.projectId) {
     const projectContext = await db
-      .select({
-        supplierId: projects.supplierId,
-        retailerId: projects.retailerId,
-      })
+      .select({ supplierId: projects.supplierId, retailerId: projects.retailerId })
       .from(projects)
       .where(and(eq(projects.id, input.projectId), isNull(projects.deletedAt)))
       .limit(1);
@@ -983,6 +1279,16 @@ export async function createTask(input: {
     ownerUserId,
     sourceType: "manual",
   });
+}
+
+export async function assignTaskOwner(input: { taskId: string; ownerUserId: string }) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  await db
+    .update(tasks)
+    .set({ ownerUserId: input.ownerUserId, updatedAt: new Date() })
+    .where(eq(tasks.id, input.taskId));
 }
 
 export async function toggleTaskStatus(input: { taskId: string; nextStatus: TaskStatus }) {

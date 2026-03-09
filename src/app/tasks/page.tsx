@@ -1,4 +1,4 @@
-import { CreateTaskForm, TaskStatusForm } from "@/components/crm/forms";
+import { AssignTaskOwnerForm, CreateTaskForm, TaskStatusForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
 import { getTasksPageData, getWorkspaceStatus } from "@/lib/db/crm";
 import { formatDate, formatRelativeDaysFromNow } from "@/lib/utils";
@@ -32,14 +32,23 @@ export default async function TasksPage() {
                   {task.supplierName || "No supplier"} · {task.projectName || "No project"} · Due{" "}
                   {formatDate(task.dueDate)} ({formatRelativeDaysFromNow(task.dueDate)})
                 </p>
+                <div className="mt-2 text-sm text-[var(--muted)]">
+                  Owner: {task.ownerName || "Unassigned"}
+                </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">
                   {task.priority}
                 </span>
                 <span className="rounded-full bg-white px-3 py-2 text-sm text-[var(--muted)]">
                   {task.status}
                 </span>
+                <AssignTaskOwnerForm
+                  entityId={task.id}
+                  ownerUserId={task.ownerUserId}
+                  returnTo="/tasks"
+                  users={data.users}
+                />
                 <TaskStatusForm taskId={task.id} returnTo="/tasks" currentStatus={task.status} />
               </div>
             </article>
@@ -51,6 +60,7 @@ export default async function TasksPage() {
         <CreateTaskForm
           supplierOptions={data.suppliers}
           projects={data.projects}
+          users={data.users}
           returnTo="/tasks"
         />
 

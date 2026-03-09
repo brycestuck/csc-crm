@@ -1,4 +1,4 @@
-import { CreateProjectForm, ProjectStageForm } from "@/components/crm/forms";
+import { AssignProjectOwnerForm, CreateProjectForm, ProjectStageForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
 import { getProjectsPageData, getWorkspaceStatus } from "@/lib/db/crm";
 
@@ -34,6 +34,9 @@ export default async function ProjectsPage() {
                   ) : null}
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
+                  <span className="rounded-full bg-white px-3 py-2">
+                    Owner: {project.ownerName || "Unassigned"}
+                  </span>
                   <span className="rounded-full bg-white px-3 py-2">Priority: {project.priority}</span>
                   <span className="rounded-full bg-white px-3 py-2">Status: {project.status}</span>
                   <span
@@ -47,12 +50,18 @@ export default async function ProjectsPage() {
                   </span>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-4 flex flex-wrap gap-3">
                 <ProjectStageForm
                   projectId={project.id}
                   returnTo="/projects"
                   stages={data.stages}
                   currentStageId={project.stageId}
+                />
+                <AssignProjectOwnerForm
+                  entityId={project.id}
+                  ownerUserId={project.ownerUserId}
+                  returnTo="/projects"
+                  users={data.users}
                 />
               </div>
             </article>
@@ -65,6 +74,7 @@ export default async function ProjectsPage() {
           supplierOptions={data.suppliers}
           retailers={data.retailers}
           stages={data.stages}
+          users={data.users}
           returnTo="/projects"
         />
 
