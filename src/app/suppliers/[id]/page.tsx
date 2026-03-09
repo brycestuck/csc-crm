@@ -41,10 +41,11 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
               <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--muted)]">{data.supplier.notes}</p>
             ) : null}
             <div className="mt-4 text-sm text-[var(--muted)]">
-              Owner: {data.supplier.ownerName || "Unassigned"}
+              Coverage: {data.supplier.ownerLabel}
             </div>
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
+            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.supplier.accountCount} accounts</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.projects.length} projects</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.tasks.length} tasks</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.activities.length} activities</span>
@@ -52,6 +53,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
           </div>
         </div>
         <div className="mt-5">
+          <p className="mb-2 text-sm text-[var(--muted)]">Fallback supplier owner</p>
           <AssignSupplierOwnerForm
             entityId={params.id}
             ownerUserId={data.supplier.ownerUserId}
@@ -63,6 +65,47 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="grid gap-6">
+          <article className="hub-panel rounded-[32px] p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
+              Accounts
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Customer coverage</h2>
+            <div className="mt-5 grid gap-3">
+              {data.accounts.length === 0 ? (
+                <div className="rounded-[24px] border border-dashed border-[var(--line)] bg-[var(--paper)] p-5 text-sm text-[var(--muted)]">
+                  No customer accounts imported yet.
+                </div>
+              ) : (
+                data.accounts.map((account) => (
+                  <div key={account.id} className="hub-subpanel rounded-[24px] p-5">
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-[var(--ink)]">{account.retailerName}</h3>
+                        {account.sourceCustomerName !== account.retailerName ? (
+                          <p className="mt-2 text-sm text-[var(--muted)]">
+                            Imported as {account.sourceCustomerName}
+                          </p>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
+                        <span className="rounded-full bg-white px-3 py-2">{account.projectCount} projects</span>
+                        <span className="rounded-full bg-white px-3 py-2">{account.openTaskCount} open tasks</span>
+                      </div>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      <div className="rounded-[20px] bg-white px-4 py-3 text-sm text-[var(--muted)]">
+                        EAM: {account.eamDisplayName || "Unassigned"}
+                      </div>
+                      <div className="rounded-[20px] bg-white px-4 py-3 text-sm text-[var(--muted)]">
+                        SPM: {account.spmDisplayName || "Unassigned"}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </article>
+
           <article className="hub-panel rounded-[32px] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
               Contacts

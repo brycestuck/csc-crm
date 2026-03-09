@@ -56,6 +56,7 @@ export default async function TeamPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
                   <span className="rounded-full bg-white px-3 py-2">{user.supplierCount} suppliers</span>
+                  <span className="rounded-full bg-white px-3 py-2">{user.accountCount} accounts</span>
                   <span className="rounded-full bg-white px-3 py-2">{user.activeProjectCount} projects</span>
                   <span className="rounded-full bg-white px-3 py-2">{user.openTaskCount} open tasks</span>
                 </div>

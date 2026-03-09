@@ -10,11 +10,16 @@ import {
   projectStageHistory,
   projects,
   retailers,
+  supplierAccounts,
   supplierContacts,
   suppliers,
   tasks,
   users,
 } from "@/lib/db/schema";
+import {
+  ensureCscSupplierWorkspaceImported,
+} from "@/lib/imports/csc-supplier-import";
+import { deriveSupplierOwnerSummary } from "@/lib/imports/csc-supplier-normalization";
 import { defaultUserSeed, teamSeedUsers } from "@/lib/team/seed";
 import {
   pipelineStageSeeds,
@@ -67,10 +72,6 @@ function getTodayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function addDays(days: number) {
-  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10);
-}
-
 export async function getWorkspaceStatus(): Promise<WorkspaceStatus> {
   if (!process.env.DATABASE_URL) {
     return {
@@ -86,12 +87,12 @@ export async function getWorkspaceStatus(): Promise<WorkspaceStatus> {
         select count(*)::int as count
         from information_schema.tables
         where table_schema = 'public'
-          and table_name in ('users', 'suppliers', 'projects', 'tasks', 'activities', 'pipeline_stages')
+          and table_name in ('users', 'suppliers', 'supplier_accounts', 'projects', 'tasks', 'activities', 'pipeline_stages')
       `
     );
 
     const count = result.rows[0]?.count ?? 0;
-    if (count < 6) {
+    if (count < 7) {
       return {
         state: "schema-missing",
         message: "Database connected, but schema is missing. Run npm run db:push in the Replit shell.",
@@ -197,216 +198,6 @@ async function seedTeamProfiles() {
   }
 }
 
-async function seedSampleWorkspace() {
-  const db = getDb();
-  const supplierCount = await db
-    .select({ count: sql<number>`count(*)::int` })
-    .from(suppliers)
-    .where(isNull(suppliers.deletedAt));
-
-  if ((supplierCount[0]?.count ?? 0) > 0) {
-    return;
-  }
-
-  const userId = await getDefaultUserId();
-
-  const retailerRows = await db
-    .select({ id: retailers.id, name: retailers.name })
-    .from(retailers)
-    .where(isNull(retailers.deletedAt));
-  const retailerByName = new Map(retailerRows.map((row) => [row.name, row.id]));
-
-  const stageRows = await db
-    .select({ id: pipelineStages.id, name: pipelineStages.name })
-    .from(pipelineStages)
-    .where(eq(pipelineStages.isActive, true));
-  const stageByName = new Map(stageRows.map((row) => [row.name, row.id]));
-
-  const insertedSuppliers = await db
-    .insert(suppliers)
-    .values([
-      {
-        name: "Jacquard",
-        ownerUserId: userId,
-        summary: "Mixed-media supplier with active outreach into Michaels and Walmart.",
-        notes: "Focus area: buyer feedback, samples, and modular sequencing for craft assortments.",
-      },
-      {
-        name: "Ecorigin",
-        ownerUserId: userId,
-        summary: "Seasonal program supplier with Walmart celebrations work in motion.",
-        notes: "Focus area: trend deck timing, modular review, and line-planning follow-up.",
-      },
-    ])
-    .returning({ id: suppliers.id, name: suppliers.name });
-
-  const supplierByName = new Map(insertedSuppliers.map((row) => [row.name, row.id]));
-
-  await db.insert(supplierContacts).values([
-    {
-      supplierId: supplierByName.get("Jacquard")!,
-      fullName: "Michelle Harmon",
-      email: "michelle@jacquard.example",
-      title: "VP Sales",
-      contactRole: "sales",
-      notes: "Primary commercial contact for new program submissions.",
-    },
-    {
-      supplierId: supplierByName.get("Jacquard")!,
-      fullName: "Ethan Shaw",
-      email: "finance@jacquard.example",
-      title: "Controller",
-      contactRole: "finance",
-      notes: "Reserved for finance-ready workflows later.",
-    },
-    {
-      supplierId: supplierByName.get("Ecorigin")!,
-      fullName: "Kelsey Reed",
-      email: "kelsey@ecorigin.example",
-      title: "National Accounts Director",
-      contactRole: "sales",
-      notes: "Primary owner for Walmart and seasonal assortment follow-up.",
-    },
-  ]);
-
-  const insertedBuyers = await db
-    .insert(buyers)
-    .values([
-      {
-        retailerId: retailerByName.get("Michaels")!,
-        fullName: "Amanda Ritchey",
-        email: "amanda@michaels.example",
-        position: "Buyer",
-      },
-      {
-        retailerId: retailerByName.get("Walmart")!,
-        fullName: "Jordan Blake",
-        email: "jordan@walmart.example",
-        position: "Buyer",
-      },
-    ])
-    .returning({ id: buyers.id, fullName: buyers.fullName });
-
-  const buyerByName = new Map(insertedBuyers.map((row) => [row.fullName, row.id]));
-
-  const insertedProjects = await db
-    .insert(projects)
-    .values([
-      {
-        name: "Leather Paint Introduction",
-        supplierId: supplierByName.get("Jacquard")!,
-        retailerId: retailerByName.get("Michaels")!,
-        buyerId: buyerByName.get("Amanda Ritchey"),
-        ownerUserId: userId,
-        pipelineStageId: stageByName.get("Samples / Review"),
-        status: "active",
-        priority: "high",
-        summary: "Samples delivered. Team is waiting on timing guidance for set-up review.",
-      },
-      {
-        name: "Walmart Introduction",
-        supplierId: supplierByName.get("Jacquard")!,
-        retailerId: retailerByName.get("Walmart")!,
-        buyerId: buyerByName.get("Jordan Blake"),
-        ownerUserId: userId,
-        pipelineStageId: stageByName.get("Introduction"),
-        status: "active",
-        priority: "medium",
-        summary: "Buyer transition and open-call positioning still need a clear next move.",
-      },
-      {
-        name: "2026 Celebrations Modular",
-        supplierId: supplierByName.get("Ecorigin")!,
-        retailerId: retailerByName.get("Walmart")!,
-        buyerId: buyerByName.get("Jordan Blake"),
-        ownerUserId: userId,
-        pipelineStageId: stageByName.get("PDB / Assessment"),
-        status: "active",
-        priority: "high",
-        summary: "Trend deck and sample coordination in progress ahead of modular presentation.",
-      },
-    ])
-    .returning({ id: projects.id, name: projects.name, pipelineStageId: projects.pipelineStageId });
-
-  await db.insert(projectStageHistory).values(
-    insertedProjects
-      .filter((project) => project.pipelineStageId)
-      .map((project) => ({
-        projectId: project.id,
-        toStageId: project.pipelineStageId!,
-        changedByUserId: userId,
-      }))
-  );
-
-  const projectByName = new Map(insertedProjects.map((row) => [row.name, row.id]));
-
-  await db.insert(tasks).values([
-    {
-      title: "Follow up with Michaels on leather paint sample feedback",
-      supplierId: supplierByName.get("Jacquard")!,
-      retailerId: retailerByName.get("Michaels")!,
-      projectId: projectByName.get("Leather Paint Introduction")!,
-      ownerUserId: userId,
-      priority: "high",
-      dueDate: addDays(2),
-      status: "todo",
-      sourceType: "manual",
-    },
-    {
-      title: "Confirm Walmart buyer transition and open-call next step",
-      supplierId: supplierByName.get("Jacquard")!,
-      retailerId: retailerByName.get("Walmart")!,
-      projectId: projectByName.get("Walmart Introduction")!,
-      ownerUserId: userId,
-      priority: "medium",
-      dueDate: addDays(5),
-      status: "todo",
-      sourceType: "manual",
-    },
-    {
-      title: "Complete trend presentation for Celebrations review",
-      supplierId: supplierByName.get("Ecorigin")!,
-      retailerId: retailerByName.get("Walmart")!,
-      projectId: projectByName.get("2026 Celebrations Modular")!,
-      ownerUserId: userId,
-      priority: "high",
-      dueDate: addDays(3),
-      status: "in_progress",
-      sourceType: "manual",
-    },
-  ]);
-
-  await db.insert(activities).values([
-    {
-      projectId: projectByName.get("Leather Paint Introduction")!,
-      userId,
-      activityType: "email_received",
-      subject: "Amanda requested a full sample assortment",
-      body: "Michaels asked for the current color assortment and pricing details before confirming next steps.",
-      contactType: "buyer",
-      contactName: "Amanda Ritchey",
-    },
-    {
-      projectId: projectByName.get("Walmart Introduction")!,
-      userId,
-      activityType: "follow_up",
-      subject: "Need update on buyer transition",
-      body: "Open-call path is still unclear while the retailer finalizes category ownership.",
-      contactType: "internal",
-      contactName: "CSC Team",
-    },
-    {
-      projectId: projectByName.get("2026 Celebrations Modular")!,
-      userId,
-      activityType: "meeting",
-      subject: "Internal review on trend deck sequencing",
-      body: "Team aligned on deck direction and sample order for upcoming modular presentation.",
-      contactType: "internal",
-      contactName: "CSC Team",
-    },
-  ]);
-}
-
 export async function ensureWorkspaceSeeded() {
   if (workspaceSeedPromise) {
     return workspaceSeedPromise;
@@ -422,7 +213,7 @@ export async function ensureWorkspaceSeeded() {
     await seedRetailers();
     await seedTeamProfiles();
     await getDefaultUserId();
-    await seedSampleWorkspace();
+    await ensureCscSupplierWorkspaceImported();
 
     return status;
   })();
@@ -469,6 +260,29 @@ async function getUserOptions(): Promise<UserOption[]> {
     .from(users)
     .where(and(isNull(users.deletedAt), eq(users.isActive, true)))
     .orderBy(asc(users.displayName));
+}
+
+async function getSupplierAccountRows() {
+  const db = getDb();
+
+  return db
+    .select({
+      id: supplierAccounts.id,
+      supplierId: supplierAccounts.supplierId,
+      retailerId: supplierAccounts.retailerId,
+      retailerName: retailers.name,
+      sourceCustomerName: supplierAccounts.sourceCustomerName,
+      eamUserId: supplierAccounts.eamUserId,
+      spmUserId: supplierAccounts.spmUserId,
+    })
+    .from(supplierAccounts)
+    .innerJoin(retailers, eq(supplierAccounts.retailerId, retailers.id))
+    .where(and(isNull(supplierAccounts.deletedAt), isNull(retailers.deletedAt)))
+    .orderBy(asc(retailers.name));
+}
+
+function buildUserLookup(users: UserOption[]) {
+  return new Map(users.map((user) => [user.id, user]));
 }
 
 async function getStageOptions() {
@@ -600,7 +414,7 @@ export async function getSuppliersPageData() {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
-  const [supplierRows, userRows, projectCounts, taskCounts, contactCounts] = await Promise.all([
+  const [supplierRows, userRows, projectCounts, taskCounts, contactCounts, accountRows] = await Promise.all([
     db
       .select({
         id: suppliers.id,
@@ -632,16 +446,34 @@ export async function getSuppliersPageData() {
       .from(supplierContacts)
       .where(isNull(supplierContacts.deletedAt))
       .groupBy(supplierContacts.supplierId),
+    getSupplierAccountRows(),
   ]);
 
+  const userLookup = buildUserLookup(userRows);
   const projectCountBySupplier = new Map(projectCounts.map((row) => [row.supplierId, row.count]));
   const taskCountBySupplier = new Map(taskCounts.map((row) => [row.supplierId, row.count]));
   const contactCountBySupplier = new Map(contactCounts.map((row) => [row.supplierId, row.count]));
+  const accountsBySupplier = new Map<string, typeof accountRows>();
+
+  for (const account of accountRows) {
+    const existing = accountsBySupplier.get(account.supplierId) ?? [];
+    existing.push(account);
+    accountsBySupplier.set(account.supplierId, existing);
+  }
 
   return {
     users: userRows,
     suppliers: supplierRows.map((supplier) => ({
       ...supplier,
+      ownerLabel: deriveSupplierOwnerSummary(
+        (accountsBySupplier.get(supplier.id) ?? []).map((account) => ({
+          eamDisplayName: account.eamUserId ? userLookup.get(account.eamUserId)?.displayName ?? null : null,
+          eamUserId: account.eamUserId,
+        })),
+        supplier.ownerName ?? null,
+        supplier.ownerUserId
+      ).label,
+      accountCount: (accountsBySupplier.get(supplier.id) ?? []).length,
       projectCount: projectCountBySupplier.get(supplier.id) ?? 0,
       openTaskCount: taskCountBySupplier.get(supplier.id) ?? 0,
       contactCount: contactCountBySupplier.get(supplier.id) ?? 0,
@@ -673,7 +505,18 @@ export async function getSupplierDetailData(supplierId: string) {
     return null;
   }
 
-  const [projectRows, taskRows, activityRows, retailerRows, stageRows, contactRows, userRows] =
+  const [
+    projectRows,
+    taskRows,
+    activityRows,
+    retailerRows,
+    stageRows,
+    contactRows,
+    userRows,
+    accountRows,
+    projectCountsByRetailer,
+    taskCountsByRetailer,
+  ] =
     await Promise.all([
       db
         .select({
@@ -752,12 +595,61 @@ export async function getSupplierDetailData(supplierId: string) {
         .where(and(eq(supplierContacts.supplierId, supplierId), isNull(supplierContacts.deletedAt)))
         .orderBy(asc(supplierContacts.fullName)),
       getUserOptions(),
+      db
+        .select({
+          id: supplierAccounts.id,
+          supplierId: supplierAccounts.supplierId,
+          retailerId: supplierAccounts.retailerId,
+          retailerName: retailers.name,
+          sourceCustomerName: supplierAccounts.sourceCustomerName,
+          eamUserId: supplierAccounts.eamUserId,
+          spmUserId: supplierAccounts.spmUserId,
+        })
+        .from(supplierAccounts)
+        .innerJoin(retailers, eq(supplierAccounts.retailerId, retailers.id))
+        .where(and(eq(supplierAccounts.supplierId, supplierId), isNull(supplierAccounts.deletedAt)))
+        .orderBy(asc(retailers.name)),
+      db
+        .select({ retailerId: projects.retailerId, count: sql<number>`count(*)::int` })
+        .from(projects)
+        .where(and(eq(projects.supplierId, supplierId), isNull(projects.deletedAt)))
+        .groupBy(projects.retailerId),
+      db
+        .select({ retailerId: tasks.retailerId, count: sql<number>`count(*)::int` })
+        .from(tasks)
+        .where(and(eq(tasks.supplierId, supplierId), isNull(tasks.deletedAt), ne(tasks.status, "done")))
+        .groupBy(tasks.retailerId),
     ]);
 
+  const userLookup = buildUserLookup(userRows);
+  const projectCountMap = new Map(projectCountsByRetailer.map((row) => [row.retailerId, row.count]));
+  const taskCountMap = new Map(taskCountsByRetailer.map((row) => [row.retailerId, row.count]));
+  const ownerSummary = deriveSupplierOwnerSummary(
+    accountRows.map((account) => ({
+      eamDisplayName: account.eamUserId ? userLookup.get(account.eamUserId)?.displayName ?? null : null,
+      eamUserId: account.eamUserId,
+    })),
+    supplier[0].ownerName ?? null,
+    supplier[0].ownerUserId
+  );
+
   return {
-    supplier: supplier[0],
+    supplier: {
+      ...supplier[0],
+      ownerLabel: ownerSummary.label,
+      accountCount: accountRows.length,
+    },
     users: userRows,
     contacts: contactRows,
+    accounts: accountRows.map((account) => ({
+      ...account,
+      eamDisplayName: account.eamUserId ? userLookup.get(account.eamUserId)?.displayName ?? null : null,
+      eamColor: account.eamUserId ? userLookup.get(account.eamUserId)?.avatarColor ?? null : null,
+      spmDisplayName: account.spmUserId ? userLookup.get(account.spmUserId)?.displayName ?? null : null,
+      spmColor: account.spmUserId ? userLookup.get(account.spmUserId)?.avatarColor ?? null : null,
+      projectCount: projectCountMap.get(account.retailerId) ?? 0,
+      openTaskCount: taskCountMap.get(account.retailerId) ?? 0,
+    })),
     projects: projectRows,
     tasks: taskRows,
     activities: activityRows.map((row) => ({
@@ -923,7 +815,7 @@ export async function getTeamPageData() {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
-  const [teamRows, supplierCounts, projectCounts, taskCounts] = await Promise.all([
+  const [teamRows, supplierCounts, projectCounts, taskCounts, accountRows] = await Promise.all([
     db
       .select({
         id: users.id,
@@ -955,16 +847,38 @@ export async function getTeamPageData() {
       .from(tasks)
       .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
       .groupBy(tasks.ownerUserId),
+    db
+      .select({
+        id: supplierAccounts.id,
+        eamUserId: supplierAccounts.eamUserId,
+        spmUserId: supplierAccounts.spmUserId,
+      })
+      .from(supplierAccounts)
+      .where(isNull(supplierAccounts.deletedAt)),
   ]);
 
   const supplierCountByOwner = new Map(supplierCounts.map((row) => [row.ownerUserId, row.count]));
   const projectCountByOwner = new Map(projectCounts.map((row) => [row.ownerUserId, row.count]));
   const taskCountByOwner = new Map(taskCounts.map((row) => [row.ownerUserId, row.count]));
+  const accountIdsByUser = new Map<string, Set<string>>();
+
+  for (const account of accountRows) {
+    for (const userIdToTrack of [account.eamUserId, account.spmUserId]) {
+      if (!userIdToTrack) {
+        continue;
+      }
+
+      const existing = accountIdsByUser.get(userIdToTrack) ?? new Set<string>();
+      existing.add(account.id);
+      accountIdsByUser.set(userIdToTrack, existing);
+    }
+  }
 
   return {
     users: teamRows.map((user) => ({
       ...user,
       supplierCount: supplierCountByOwner.get(user.id) ?? 0,
+      accountCount: (accountIdsByUser.get(user.id) ?? new Set()).size,
       activeProjectCount: projectCountByOwner.get(user.id) ?? 0,
       openTaskCount: taskCountByOwner.get(user.id) ?? 0,
     })),
@@ -996,7 +910,7 @@ export async function getTeamMemberDetailData(userId: string) {
     return null;
   }
 
-  const [supplierRows, projectRows, taskRows, activityRows] = await Promise.all([
+  const [supplierRows, projectRows, taskRows, activityRows, assignedAccounts, projectCountsByRetailer, taskCountsByRetailer] = await Promise.all([
     db
       .select({
         id: suppliers.id,
@@ -1068,16 +982,80 @@ export async function getTeamMemberDetailData(userId: string) {
       )
       .orderBy(desc(activities.happenedAt))
       .limit(20),
+    db
+      .select({
+        id: supplierAccounts.id,
+        supplierId: supplierAccounts.supplierId,
+        supplierName: suppliers.name,
+        retailerId: supplierAccounts.retailerId,
+        retailerName: retailers.name,
+        sourceCustomerName: supplierAccounts.sourceCustomerName,
+        eamUserId: supplierAccounts.eamUserId,
+        spmUserId: supplierAccounts.spmUserId,
+      })
+      .from(supplierAccounts)
+      .innerJoin(suppliers, eq(supplierAccounts.supplierId, suppliers.id))
+      .innerJoin(retailers, eq(supplierAccounts.retailerId, retailers.id))
+      .where(
+        and(
+          isNull(supplierAccounts.deletedAt),
+          isNull(suppliers.deletedAt),
+          isNull(retailers.deletedAt),
+          or(eq(supplierAccounts.eamUserId, userId), eq(supplierAccounts.spmUserId, userId))
+        )
+      )
+      .orderBy(asc(suppliers.name), asc(retailers.name)),
+    db
+      .select({
+        supplierId: projects.supplierId,
+        retailerId: projects.retailerId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(projects)
+      .where(isNull(projects.deletedAt))
+      .groupBy(projects.supplierId, projects.retailerId),
+    db
+      .select({
+        supplierId: tasks.supplierId,
+        retailerId: tasks.retailerId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(tasks)
+      .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
+      .groupBy(tasks.supplierId, tasks.retailerId),
   ]);
+
+  const projectCountMap = new Map(
+    projectCountsByRetailer
+      .filter((row) => row.supplierId && row.retailerId)
+      .map((row) => [`${row.supplierId}:${row.retailerId}`, row.count])
+  );
+  const taskCountMap = new Map(
+    taskCountsByRetailer
+      .filter((row) => row.supplierId && row.retailerId)
+      .map((row) => [`${row.supplierId}:${row.retailerId}`, row.count])
+  );
 
   return {
     user: user[0],
     metrics: {
       supplierCount: supplierRows.length,
+      accountCount: assignedAccounts.length,
       projectCount: projectRows.length,
       taskCount: taskRows.filter((task) => task.status !== "done").length,
     },
     suppliers: supplierRows,
+    accounts: assignedAccounts.map((account) => ({
+      ...account,
+      assignmentRole:
+        account.eamUserId === userId && account.spmUserId === userId
+          ? "EAM / SPM"
+          : account.eamUserId === userId
+            ? "EAM"
+            : "SPM",
+      projectCount: projectCountMap.get(`${account.supplierId}:${account.retailerId}`) ?? 0,
+      openTaskCount: taskCountMap.get(`${account.supplierId}:${account.retailerId}`) ?? 0,
+    })),
     projects: projectRows,
     tasks: taskRows,
     activities: activityRows.map((activity) => ({
@@ -1095,7 +1073,6 @@ export async function createSupplier(input: {
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const ownerUserId = input.ownerUserId || (await getDefaultUserId());
 
   const inserted = await db
     .insert(suppliers)
@@ -1103,7 +1080,7 @@ export async function createSupplier(input: {
       name: input.name,
       summary: input.summary || null,
       notes: input.notes || null,
-      ownerUserId,
+      ownerUserId: input.ownerUserId || null,
     })
     .returning({ id: suppliers.id });
 
@@ -1118,6 +1095,34 @@ export async function assignSupplierOwner(input: { supplierId: string; ownerUser
     .update(suppliers)
     .set({ ownerUserId: input.ownerUserId, updatedAt: new Date() })
     .where(eq(suppliers.id, input.supplierId));
+}
+
+async function resolveSupplierAccountOwnerUserId(supplierId: string, retailerId: string) {
+  const db = getDb();
+  const account = await db
+    .select({ eamUserId: supplierAccounts.eamUserId })
+    .from(supplierAccounts)
+    .where(
+      and(
+        eq(supplierAccounts.supplierId, supplierId),
+        eq(supplierAccounts.retailerId, retailerId),
+        isNull(supplierAccounts.deletedAt)
+      )
+    )
+    .limit(1);
+
+  return account[0]?.eamUserId ?? null;
+}
+
+async function resolveSupplierFallbackOwnerUserId(supplierId: string) {
+  const db = getDb();
+  const supplier = await db
+    .select({ ownerUserId: suppliers.ownerUserId })
+    .from(suppliers)
+    .where(and(eq(suppliers.id, supplierId), isNull(suppliers.deletedAt)))
+    .limit(1);
+
+  return supplier[0]?.ownerUserId ?? null;
 }
 
 export async function createSupplierContact(input: {
@@ -1189,7 +1194,6 @@ export async function createProject(input: {
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const ownerUserId = input.ownerUserId || (await getDefaultUserId());
 
   let pipelineStageId = input.pipelineStageId;
   if (!pipelineStageId) {
@@ -1201,6 +1205,12 @@ export async function createProject(input: {
       .limit(1);
     pipelineStageId = firstStage[0]?.id;
   }
+
+  const ownerUserId =
+    input.ownerUserId ||
+    (await resolveSupplierAccountOwnerUserId(input.supplierId, input.retailerId)) ||
+    (await resolveSupplierFallbackOwnerUserId(input.supplierId)) ||
+    (await getDefaultUserId());
 
   const inserted = await db
     .insert(projects)
@@ -1276,14 +1286,18 @@ export async function createTask(input: {
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const ownerUserId = input.ownerUserId || (await getDefaultUserId());
 
   let supplierId = input.supplierId;
   let retailerId: string | null = null;
+  let projectOwnerUserId: string | null = null;
 
   if (input.projectId) {
     const projectContext = await db
-      .select({ supplierId: projects.supplierId, retailerId: projects.retailerId })
+      .select({
+        supplierId: projects.supplierId,
+        retailerId: projects.retailerId,
+        ownerUserId: projects.ownerUserId,
+      })
       .from(projects)
       .where(and(eq(projects.id, input.projectId), isNull(projects.deletedAt)))
       .limit(1);
@@ -1291,8 +1305,16 @@ export async function createTask(input: {
     if (projectContext[0]) {
       supplierId = projectContext[0].supplierId;
       retailerId = projectContext[0].retailerId;
+      projectOwnerUserId = projectContext[0].ownerUserId;
     }
   }
+
+  const ownerUserId =
+    input.ownerUserId ||
+    projectOwnerUserId ||
+    (retailerId ? await resolveSupplierAccountOwnerUserId(supplierId, retailerId) : null) ||
+    (await resolveSupplierFallbackOwnerUserId(supplierId)) ||
+    (await getDefaultUserId());
 
   await db.insert(tasks).values({
     supplierId,

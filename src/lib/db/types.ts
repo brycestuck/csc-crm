@@ -17,6 +17,7 @@ import {
   recurringTaskTemplates,
   retailerDepartments,
   retailers,
+  supplierAccounts,
   supplierContacts,
   supplierTransactions,
   suppliers,
@@ -36,6 +37,9 @@ export type NewSupplierContact = InferInsertModel<typeof supplierContacts>;
 
 export type Retailer = InferSelectModel<typeof retailers>;
 export type NewRetailer = InferInsertModel<typeof retailers>;
+
+export type SupplierAccount = InferSelectModel<typeof supplierAccounts>;
+export type NewSupplierAccount = InferInsertModel<typeof supplierAccounts>;
 
 export type RetailerDepartment = InferSelectModel<typeof retailerDepartments>;
 export type NewRetailerDepartment = InferInsertModel<typeof retailerDepartments>;

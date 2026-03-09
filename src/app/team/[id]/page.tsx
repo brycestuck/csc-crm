@@ -55,6 +55,7 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
           </div>
           <div className="flex flex-wrap gap-3 text-sm text-[var(--muted)]">
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.supplierCount} suppliers</span>
+            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.accountCount} accounts</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.projectCount} projects</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.metrics.taskCount} open tasks</span>
           </div>
@@ -125,6 +126,41 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
+        <article className="hub-panel rounded-[32px] p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
+            Assigned accounts
+          </p>
+          <div className="mt-5 grid gap-3">
+            {data.accounts.length === 0 ? (
+              <div className="hub-subpanel rounded-[24px] p-4 text-sm text-[var(--muted)]">
+                No customer accounts assigned yet.
+              </div>
+            ) : (
+              data.accounts.map((account) => (
+                <div key={account.id} className="hub-subpanel rounded-[24px] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium text-[var(--ink)]">
+                        {account.supplierName} · {account.retailerName}
+                      </div>
+                      <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                        {account.assignmentRole}
+                        {account.sourceCustomerName !== account.retailerName
+                          ? ` · Imported as ${account.sourceCustomerName}`
+                          : ""}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
+                      <span className="rounded-full bg-white px-3 py-2">{account.projectCount} projects</span>
+                      <span className="rounded-full bg-white px-3 py-2">{account.openTaskCount} open tasks</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </article>
+
         <article className="hub-panel rounded-[32px] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
             Task load

@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import type {
@@ -127,6 +128,35 @@ export const retailers = pgTable(
   },
   (table) => ({
     nameIdx: index("idx_retailers_name").on(table.name),
+  })
+);
+
+export const supplierAccounts = pgTable(
+  "supplier_accounts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    supplierId: uuid("supplier_id")
+      .notNull()
+      .references(() => suppliers.id, { onDelete: "cascade" }),
+    retailerId: uuid("retailer_id")
+      .notNull()
+      .references(() => retailers.id, { onDelete: "cascade" }),
+    eamUserId: uuid("eam_user_id").references(() => users.id, { onDelete: "set null" }),
+    spmUserId: uuid("spm_user_id").references(() => users.id, { onDelete: "set null" }),
+    sourceCustomerName: text("source_customer_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  },
+  (table) => ({
+    supplierIdx: index("idx_supplier_accounts_supplier").on(table.supplierId),
+    retailerIdx: index("idx_supplier_accounts_retailer").on(table.retailerId),
+    eamIdx: index("idx_supplier_accounts_eam").on(table.eamUserId),
+    spmIdx: index("idx_supplier_accounts_spm").on(table.spmUserId),
+    supplierRetailerUnique: uniqueIndex("uq_supplier_accounts_supplier_retailer").on(
+      table.supplierId,
+      table.retailerId
+    ),
   })
 );
 

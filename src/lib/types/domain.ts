@@ -189,3 +189,18 @@ export type InboxItemDTO = {
   subtitle: string | null;
   dueAt: string | null;
 };
+
+export type SupplierAccountView = {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  retailerId: string;
+  retailerName: string;
+  sourceCustomerName: string;
+  eamUserId: string | null;
+  eamDisplayName: string | null;
+  spmUserId: string | null;
+  spmDisplayName: string | null;
+  projectCount: number;
+  openTaskCount: number;
+};

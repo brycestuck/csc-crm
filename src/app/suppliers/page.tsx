@@ -15,11 +15,12 @@ export default async function SuppliersPage() {
   const data = await getSuppliersPageData();
   const totals = data.suppliers.reduce(
     (acc, supplier) => ({
+      accounts: acc.accounts + supplier.accountCount,
       projects: acc.projects + supplier.projectCount,
       openTasks: acc.openTasks + supplier.openTaskCount,
       contacts: acc.contacts + supplier.contactCount,
     }),
-    { projects: 0, openTasks: 0, contacts: 0 }
+    { accounts: 0, projects: 0, openTasks: 0, contacts: 0 }
   );
 
   return (
@@ -32,6 +33,7 @@ export default async function SuppliersPage() {
           <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Supplier workspace</h1>
           <div className="mt-4 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{data.suppliers.length} suppliers</span>
+            <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.accounts} accounts</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.projects} projects</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.openTasks} open tasks</span>
             <span className="rounded-full bg-[var(--surface)] px-4 py-2">{totals.contacts} contacts</span>
@@ -51,7 +53,7 @@ export default async function SuppliersPage() {
                     {supplier.summary || "No summary yet."}
                   </p>
                   <div className="mt-3 text-sm text-[var(--muted)]">
-                    Owner: {supplier.ownerName || "Unassigned"}
+                    Coverage: {supplier.ownerLabel}
                   </div>
                 </div>
                 <div className="text-right text-xs text-[var(--muted)]">
@@ -62,6 +64,7 @@ export default async function SuppliersPage() {
                 </div>
               </div>
               <div className="mt-4 flex gap-3 text-sm text-[var(--muted)]">
+                <span className="rounded-full bg-white px-3 py-2">{supplier.accountCount} accounts</span>
                 <span className="rounded-full bg-white px-3 py-2">{supplier.projectCount} projects</span>
                 <span className="rounded-full bg-white px-3 py-2">{supplier.openTaskCount} open tasks</span>
                 <span className="rounded-full bg-white px-3 py-2">{supplier.contactCount} contacts</span>

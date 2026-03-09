@@ -102,7 +102,8 @@ export function CreateSupplierForm({ users }: { users: UserOption[] }) {
     <form action={createSupplierAction} className={cardClassName()}>
       <h2 className="text-lg font-semibold text-[var(--ink)]">Add supplier</h2>
       <input name="name" placeholder="Supplier name" required className={inputClassName()} />
-      <select name="ownerUserId" defaultValue={users[0]?.id || ""} className={inputClassName()}>
+      <select name="ownerUserId" defaultValue="" className={inputClassName()}>
+        <option value="">No fallback owner</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {ownerOptionLabel(user)}
@@ -203,7 +204,8 @@ export function CreateProjectForm({
           ))}
         </select>
       ) : null}
-      <select name="ownerUserId" defaultValue={users[0]?.id || ""} className={inputClassName()}>
+      <select name="ownerUserId" defaultValue="" className={inputClassName()}>
+        <option value="">Use account owner</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {ownerOptionLabel(user)}
@@ -277,7 +279,8 @@ export function CreateTaskForm({
           ))}
         </select>
       ) : null}
-      <select name="ownerUserId" defaultValue={users[0]?.id || ""} className={inputClassName()}>
+      <select name="ownerUserId" defaultValue="" className={inputClassName()}>
+        <option value="">Use project owner</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {ownerOptionLabel(user)}
