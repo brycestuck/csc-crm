@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const status = await getWorkspaceStatus();
   if (status.state !== "ready") {
-    return <SetupState title="CRM database not ready" message={status.message} />;
+    return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
   const [data, suppliers] = await Promise.all([getDashboardData(), getSuppliersPageData()]);
@@ -16,25 +16,35 @@ export default async function Home() {
   return (
     <main className="grid gap-6">
       <section className="grid gap-4 xl:grid-cols-5">
-        <div className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6 shadow-[0_24px_80px_rgba(53,41,28,0.08)] xl:col-span-3">
+        <div className="hub-panel rounded-[36px] p-7 xl:col-span-3">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-            Dashboard
+            The Hub
           </p>
           <h1 className="mt-3 text-4xl font-semibold leading-tight text-[var(--ink)]">
-            Operational view of suppliers, projects, tasks, and activity.
+            One clear command center for suppliers, projects, tasks, and team follow-up.
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-[var(--muted)]">
-            This is now a working CRM slice. Supplier records, projects, tasks, and activities persist
-            in Postgres and the workspace seeds itself with realistic starter data when empty.
+            The Hub gives Creative Sales Solutions one shared place to run day-to-day broker work.
+            Supplier records, project progress, tasks, and activity all stay visible in one large,
+            readable interface.
           </p>
           <div className="mt-6 flex flex-wrap gap-3 text-sm text-[var(--muted)]">
-            <Link href="/suppliers" className="rounded-full bg-[var(--ink)] px-4 py-3 font-medium text-white">
+            <Link
+              href="/suppliers"
+              className="rounded-full bg-[var(--accent-deep)] px-5 py-3 font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.22)]"
+            >
               Open suppliers
             </Link>
-            <Link href="/projects" className="rounded-full bg-[var(--surface)] px-4 py-3">
+            <Link
+              href="/projects"
+              className="rounded-full border border-[var(--line)] bg-white/70 px-5 py-3 font-medium text-[var(--ink)]"
+            >
               Review projects
             </Link>
-            <Link href="/tasks" className="rounded-full bg-[var(--surface)] px-4 py-3">
+            <Link
+              href="/tasks"
+              className="rounded-full border border-[var(--line)] bg-white/70 px-5 py-3 font-medium text-[var(--ink)]"
+            >
               Work tasks
             </Link>
           </div>
@@ -48,18 +58,18 @@ export default async function Home() {
             { label: "Overdue tasks", value: data.metrics.overdueTaskCount },
             { label: "Due this week", value: data.metrics.dueThisWeekCount },
           ].map((item) => (
-            <div key={item.label} className="rounded-[28px] border border-[var(--line)] bg-[var(--ink)] p-5 text-[var(--paper)] shadow-[0_24px_80px_rgba(24,20,16,0.24)]">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent)]">
+            <div key={item.label} className="hub-subpanel rounded-[28px] p-5">
+              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
                 {item.label}
               </div>
-              <div className="mt-3 text-3xl font-semibold">{item.value}</div>
+              <div className="mt-3 text-3xl font-semibold text-[var(--ink)]">{item.value}</div>
             </div>
           ))}
         </div>
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-        <article className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+        <article className="hub-panel rounded-[32px] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -73,17 +83,18 @@ export default async function Home() {
           </div>
           <div className="mt-5 grid gap-3">
             {data.upcomingTasks.map((task) => (
-              <div key={task.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-4">
+              <div key={task.id} className="hub-subpanel rounded-[24px] p-4">
                 <div className="font-medium text-[var(--ink)]">{task.title}</div>
                 <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
-                  {task.supplierName || "No supplier"} · {task.projectName || "No project"} · {formatRelativeDaysFromNow(task.dueDate)}
+                  {task.supplierName || "No supplier"} · {task.projectName || "No project"} ·{" "}
+                  {formatRelativeDaysFromNow(task.dueDate)}
                 </div>
               </div>
             ))}
           </div>
         </article>
 
-        <article className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+        <article className="hub-panel rounded-[32px] p-6">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -97,7 +108,7 @@ export default async function Home() {
           </div>
           <div className="mt-5 grid gap-3">
             {data.recentActivities.map((activity) => (
-              <div key={activity.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-4">
+              <div key={activity.id} className="hub-subpanel rounded-[24px] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <div className="font-medium text-[var(--ink)]">{activity.subject}</div>
@@ -113,7 +124,7 @@ export default async function Home() {
         </article>
       </section>
 
-      <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+      <section className="hub-panel rounded-[32px] p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -127,7 +138,7 @@ export default async function Home() {
         </div>
         <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {data.staleProjects.map((project) => (
-            <div key={project.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-4">
+            <div key={project.id} className="hub-subpanel rounded-[24px] p-4">
               <div className="font-medium text-[var(--ink)]">{project.name}</div>
               <div className="mt-2 text-sm leading-6 text-[var(--muted)]">
                 {project.supplierName} · {project.status}
@@ -140,7 +151,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+      <section className="hub-panel rounded-[32px] p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -157,7 +168,7 @@ export default async function Home() {
             <Link
               key={supplier.id}
               href={`/suppliers/${supplier.id}`}
-              className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-4 transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(53,41,28,0.08)]"
+              className="hub-subpanel rounded-[24px] p-4 transition hover:-translate-y-0.5 hover:border-[var(--accent-strong)]"
             >
               <div className="font-medium text-[var(--ink)]">{supplier.name}</div>
               <div className="mt-2 text-sm leading-6 text-[var(--muted)]">

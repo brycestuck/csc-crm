@@ -7,21 +7,21 @@ export const dynamic = "force-dynamic";
 export default async function ProjectsPage() {
   const status = await getWorkspaceStatus();
   if (status.state !== "ready") {
-    return <SetupState title="CRM database not ready" message={status.message} />;
+    return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
   const data = await getProjectsPageData();
 
   return (
     <main className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6 shadow-[0_24px_80px_rgba(53,41,28,0.08)]">
+      <section className="hub-panel rounded-[32px] p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
           Projects
         </p>
         <h1 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Pipeline and workstreams</h1>
         <div className="mt-6 grid gap-4">
           {data.projects.map((project) => (
-            <article key={project.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-5">
+            <article key={project.id} className="hub-subpanel rounded-[24px] p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-semibold text-[var(--ink)]">{project.name}</h2>
@@ -68,7 +68,7 @@ export default async function ProjectsPage() {
           returnTo="/projects"
         />
 
-        <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+        <section className="hub-panel rounded-[32px] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
             Stage summary
           </p>
@@ -76,7 +76,7 @@ export default async function ProjectsPage() {
             {data.stageSummary.map((stage) => (
               <div
                 key={stage.id}
-                className="flex items-center justify-between rounded-[20px] border border-[var(--line)] bg-[var(--paper)] px-4 py-3"
+                className="hub-subpanel flex items-center justify-between rounded-[20px] px-4 py-3"
               >
                 <div className="flex items-center gap-3">
                   <span

@@ -1,6 +1,6 @@
-# Creative Sales CRM
+# The Hub
 
-Operational supplier-first CRM slice for Creative Sales Solutions, built for Replit hosting with Replit Postgres.
+Operational supplier-first workspace for Creative Sales Solutions, built for Replit hosting with Replit Postgres.
 
 ## Current product slice
 

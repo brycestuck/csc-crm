@@ -8,14 +8,14 @@ export const dynamic = "force-dynamic";
 export default async function TasksPage() {
   const status = await getWorkspaceStatus();
   if (status.state !== "ready") {
-    return <SetupState title="CRM database not ready" message={status.message} />;
+    return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
   const data = await getTasksPageData();
 
   return (
     <main className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6 shadow-[0_24px_80px_rgba(53,41,28,0.08)]">
+      <section className="hub-panel rounded-[32px] p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
           Tasks
         </p>
@@ -24,7 +24,7 @@ export default async function TasksPage() {
           {data.tasks.map((task) => (
             <article
               key={task.id}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-5"
+              className="hub-subpanel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-5"
             >
               <div>
                 <h2 className="text-lg font-semibold text-[var(--ink)]">{task.title}</h2>
@@ -54,20 +54,20 @@ export default async function TasksPage() {
           returnTo="/tasks"
         />
 
-        <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+        <section className="hub-panel rounded-[32px] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
             Queue summary
           </p>
           <div className="mt-5 grid gap-3">
-            <div className="rounded-[20px] border border-[var(--line)] bg-[var(--paper)] p-4">
+            <div className="hub-subpanel rounded-[20px] p-4">
               <div className="text-sm text-[var(--muted)]">Open tasks</div>
               <div className="mt-2 text-3xl font-semibold text-[var(--ink)]">{data.metrics.openCount}</div>
             </div>
-            <div className="rounded-[20px] border border-[var(--line)] bg-[var(--paper)] p-4">
+            <div className="hub-subpanel rounded-[20px] p-4">
               <div className="text-sm text-[var(--muted)]">Overdue</div>
               <div className="mt-2 text-3xl font-semibold text-[var(--ink)]">{data.metrics.overdueCount}</div>
             </div>
-            <div className="rounded-[20px] border border-[var(--line)] bg-[var(--paper)] p-4">
+            <div className="hub-subpanel rounded-[20px] p-4">
               <div className="text-sm text-[var(--muted)]">Completed</div>
               <div className="mt-2 text-3xl font-semibold text-[var(--ink)]">{data.metrics.doneCount}</div>
             </div>

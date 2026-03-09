@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function SuppliersPage() {
   const status = await getWorkspaceStatus();
   if (status.state !== "ready") {
-    return <SetupState title="CRM database not ready" message={status.message} />;
+    return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
   const suppliers = await getSuppliersPageData();
@@ -24,7 +24,7 @@ export default async function SuppliersPage() {
 
   return (
     <main className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6 shadow-[0_24px_80px_rgba(53,41,28,0.08)]">
+      <section className="hub-panel rounded-[32px] p-6">
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
             Suppliers
@@ -42,7 +42,7 @@ export default async function SuppliersPage() {
             <Link
               key={supplier.id}
               href={`/suppliers/${supplier.id}`}
-              className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-5 transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(53,41,28,0.08)]"
+              className="hub-subpanel rounded-[24px] p-5 transition hover:-translate-y-0.5 hover:border-[var(--accent-strong)]"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>

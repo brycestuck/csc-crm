@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export default async function SupplierDetailPage({ params }: { params: { id: string } }) {
   const status = await getWorkspaceStatus();
   if (status.state !== "ready") {
-    return <SetupState title="CRM database not ready" message={status.message} />;
+    return <SetupState title="The Hub database is not ready" message={status.message} />;
   }
 
   const data = await getSupplierDetailData(params.id);
@@ -24,7 +24,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
 
   return (
     <main className="grid gap-6">
-      <section className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6 shadow-[0_24px_80px_rgba(53,41,28,0.08)]">
+      <section className="hub-panel rounded-[32px] p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -49,7 +49,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="grid gap-6">
-          <article className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+          <article className="hub-panel rounded-[32px] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
               Contacts
             </p>
@@ -61,7 +61,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
                 </div>
               ) : (
                 data.contacts.map((contact) => (
-                  <div key={contact.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-5">
+                <div key={contact.id} className="hub-subpanel rounded-[24px] p-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h3 className="text-lg font-semibold text-[var(--ink)]">{contact.fullName}</h3>
@@ -82,7 +82,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           </article>
 
-          <article className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+          <article className="hub-panel rounded-[32px] p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
@@ -93,7 +93,7 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
             <div className="grid gap-4">
               {data.projects.map((project) => (
-                <div key={project.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-5">
+                <div key={project.id} className="hub-subpanel rounded-[24px] p-5">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                       <h3 className="text-lg font-semibold text-[var(--ink)]">{project.name}</h3>
@@ -127,14 +127,14 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           </article>
 
-          <article className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+          <article className="hub-panel rounded-[32px] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
               Tasks
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Execution queue</h2>
             <div className="mt-5 grid gap-3">
               {data.tasks.map((task) => (
-                <div key={task.id} className="flex flex-wrap items-center justify-between gap-4 rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-4">
+                <div key={task.id} className="hub-subpanel flex flex-wrap items-center justify-between gap-4 rounded-[24px] p-4">
                   <div>
                     <div className="font-medium text-[var(--ink)]">{task.title}</div>
                     <div className="mt-1 text-sm text-[var(--muted)]">
@@ -150,14 +150,14 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             </div>
           </article>
 
-          <article className="rounded-[32px] border border-[var(--line)] bg-white/80 p-6">
+          <article className="hub-panel rounded-[32px] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
               Activity
             </p>
             <h2 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Latest timeline</h2>
             <div className="mt-5 grid gap-3">
               {data.activities.map((activity) => (
-                <div key={activity.id} className="rounded-[24px] border border-[var(--line)] bg-[var(--paper)] p-4">
+                <div key={activity.id} className="hub-subpanel rounded-[24px] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="font-medium text-[var(--ink)]">{activity.subject}</div>

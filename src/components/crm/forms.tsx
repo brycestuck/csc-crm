@@ -38,11 +38,11 @@ type StageOption = {
 };
 
 function inputClassName() {
-  return "rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-4 py-3 outline-none";
+  return "rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-4 py-3 text-[var(--ink)] shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] outline-none transition focus:border-[var(--accent-strong)] focus:bg-white";
 }
 
 function cardClassName() {
-  return "grid gap-3 rounded-[28px] border border-[var(--line)] bg-white/75 p-5";
+  return "hub-panel grid gap-3 rounded-[28px] p-5";
 }
 
 export function CreateSupplierForm() {
@@ -57,7 +57,7 @@ export function CreateSupplierForm() {
         className={inputClassName()}
       />
       <textarea name="notes" placeholder="Internal notes" rows={4} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--ink)] px-4 py-3 text-sm font-medium text-white">
+      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
         Create supplier
       </button>
     </form>
@@ -90,7 +90,7 @@ export function CreateSupplierContactForm({ supplierId }: { supplierId: string }
         ))}
       </select>
       <textarea name="notes" placeholder="Notes" rows={3} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--ink)] px-4 py-3 text-sm font-medium text-white">
+      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
         Save contact
       </button>
     </form>
@@ -157,7 +157,7 @@ export function CreateProjectForm({
         ))}
       </select>
       <textarea name="summary" placeholder="Summary" rows={3} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--accent-strong)] px-4 py-3 text-sm font-medium text-white">
+      <button className="rounded-2xl bg-[var(--accent-strong)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(136,99,183,0.2)]">
         Add project
       </button>
     </form>
@@ -209,7 +209,7 @@ export function CreateTaskForm({
           </option>
         ))}
       </select>
-      <button className="rounded-2xl bg-[var(--ink)] px-4 py-3 text-sm font-medium text-white">
+      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
         Add task
       </button>
     </form>
@@ -261,7 +261,7 @@ export function CreateActivityForm({
         ))}
       </select>
       <textarea name="body" placeholder="Details" rows={4} className={inputClassName()} />
-      <button className="rounded-2xl bg-[var(--ink)] px-4 py-3 text-sm font-medium text-white">
+      <button className="rounded-2xl bg-[var(--accent-deep)] px-4 py-3 text-sm font-medium text-white shadow-[0_14px_28px_rgba(95,70,137,0.18)]">
         Save activity
       </button>
     </form>
@@ -294,7 +294,7 @@ export function ProjectStageForm({
           </option>
         ))}
       </select>
-      <button className="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-[var(--ink)]">
+      <button className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm font-medium text-[var(--ink)]">
         Update
       </button>
     </form>
@@ -317,7 +317,7 @@ export function TaskStatusForm({
       <input type="hidden" name="taskId" value={taskId} />
       <input type="hidden" name="returnTo" value={returnTo} />
       <input type="hidden" name="nextStatus" value={nextStatus} />
-      <button className="rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm font-medium text-[var(--ink)]">
+      <button className="rounded-xl border border-[var(--line)] bg-white/80 px-3 py-2 text-sm font-medium text-[var(--ink)]">
         {currentStatus === "done" ? "Reopen" : "Mark done"}
       </button>
     </form>

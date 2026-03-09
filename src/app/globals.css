@@ -3,17 +3,21 @@
 @tailwind utilities;
 
 :root {
-  --background: #f3ece2;
-  --foreground: #211b14;
-  --ink: #211b14;
-  --paper: #fffaf2;
-  --muted: #695d4d;
-  --surface: #efe4d6;
-  --surface-strong: #e7dbc9;
-  --line: rgba(96, 76, 53, 0.16);
-  --accent: #d58b3d;
-  --accent-soft: rgba(213, 139, 61, 0.12);
-  --accent-strong: #a85a1c;
+  --background: #f7f3fb;
+  --foreground: #2b2235;
+  --ink: #2f2340;
+  --paper: #fffcff;
+  --muted: #6c6279;
+  --surface: #f1ebf8;
+  --surface-strong: #e5dbf3;
+  --line: rgba(87, 73, 111, 0.14);
+  --accent: #d9c8ee;
+  --accent-soft: rgba(169, 139, 210, 0.18);
+  --accent-strong: #8863b7;
+  --accent-deep: #5f4689;
+  --shadow-panel: 0 24px 80px rgba(88, 69, 118, 0.12);
+  --shadow-soft: 0 16px 44px rgba(107, 92, 139, 0.1);
+  --font-display: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
 }
 
 * {
@@ -22,8 +26,9 @@
 
 html {
   background:
-    radial-gradient(circle at top left, rgba(213, 139, 61, 0.16), transparent 32%),
-    radial-gradient(circle at bottom right, rgba(27, 107, 95, 0.18), transparent 28%),
+    radial-gradient(circle at top left, rgba(169, 139, 210, 0.22), transparent 34%),
+    radial-gradient(circle at 80% 10%, rgba(255, 255, 255, 0.72), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(214, 198, 238, 0.4), transparent 30%),
     var(--background);
 }
 
@@ -40,7 +45,7 @@ a {
 }
 
 ::selection {
-  background: rgba(213, 139, 61, 0.24);
+  background: rgba(169, 139, 210, 0.28);
 }
 
 @layer base {
@@ -49,9 +54,32 @@ a {
   h3,
   h4 {
     text-wrap: balance;
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
   }
 
   p {
     text-wrap: pretty;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .hub-panel {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(241, 235, 248, 0.9));
+    box-shadow: var(--shadow-panel);
+  }
+
+  .hub-subpanel {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(241, 235, 248, 0.88));
+    box-shadow: var(--shadow-soft);
   }
 }

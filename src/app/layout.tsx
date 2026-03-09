@@ -15,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Creative Sales CRM",
-  description: "Supplier-first CRM and project management foundation for Creative Sales Solutions.",
+  title: "The Hub",
+  description: "Shared supplier, project, task, and activity workspace for Creative Sales Solutions.",
 };
 
 export default function RootLayout({
