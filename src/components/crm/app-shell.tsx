@@ -14,6 +14,23 @@ const navItems = [
   { href: "/team", label: "Team", icon: User },
 ];
 
+function HubMark() {
+  return (
+    <div className="relative h-[76px] w-[76px] shrink-0 overflow-hidden rounded-[26px] border border-white/50 bg-[linear-gradient(155deg,#f6efff_0%,#d7c0f1_45%,#7f61b6_100%)] shadow-[0_20px_40px_rgba(95,70,137,0.28)]">
+      <div className="absolute inset-[11px] rounded-[20px] border border-white/35 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.55),rgba(255,255,255,0.08)_58%,rgba(64,35,98,0.28)_100%)]" />
+      <div className="absolute left-[38px] top-[18px] h-[32px] w-[2px] bg-white/60" />
+      <div className="absolute left-[22px] top-[33px] h-[2px] w-[32px] bg-white/60" />
+      <div className="absolute left-[29px] top-[24px] h-[2px] w-[16px] rotate-[38deg] bg-white/55" />
+      <div className="absolute left-[29px] top-[40px] h-[2px] w-[16px] -rotate-[38deg] bg-white/55" />
+      <span className="absolute left-[31px] top-[11px] h-[14px] w-[14px] rounded-full border border-white/35 bg-white shadow-[0_6px_12px_rgba(255,255,255,0.35)]" />
+      <span className="absolute left-[31px] top-[31px] h-[16px] w-[16px] rounded-full border border-white/35 bg-[var(--accent-deep)] shadow-[0_8px_16px_rgba(48,30,80,0.25)]" />
+      <span className="absolute left-[15px] top-[27px] h-[14px] w-[14px] rounded-full border border-white/35 bg-[#f8f3ff] shadow-[0_6px_12px_rgba(255,255,255,0.35)]" />
+      <span className="absolute left-[47px] top-[27px] h-[14px] w-[14px] rounded-full border border-white/35 bg-[#efe6fb] shadow-[0_6px_12px_rgba(255,255,255,0.35)]" />
+      <span className="absolute left-[31px] top-[50px] h-[14px] w-[14px] rounded-full border border-white/35 bg-[#efe6fb] shadow-[0_6px_12px_rgba(255,255,255,0.35)]" />
+    </div>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
@@ -21,24 +38,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       <div className="mx-auto grid min-h-screen max-w-[1600px] gap-6 px-4 py-4 lg:grid-cols-[290px_1fr] lg:px-6">
         <aside className="hub-panel rounded-[36px] p-5 text-[var(--ink)]">
-          <div className="rounded-[28px] bg-[linear-gradient(145deg,rgba(217,200,238,0.92),rgba(255,255,255,0.85))] p-5 shadow-[0_18px_40px_rgba(121,94,164,0.18)]">
-            <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-deep)]">
-              Creative Sales Solutions
+          <Link
+            href="/"
+            className="group relative block overflow-hidden rounded-[30px] border border-[rgba(113,85,156,0.18)] bg-[linear-gradient(160deg,rgba(255,255,255,0.92)_0%,rgba(239,230,251,0.95)_34%,rgba(212,193,240,0.98)_100%)] p-5 shadow-[0_22px_48px_rgba(111,82,160,0.2)]"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.7),transparent_34%),radial-gradient(circle_at_85%_20%,rgba(124,99,176,0.18),transparent_28%)] opacity-90" />
+            <div className="relative flex items-center gap-4">
+              <HubMark />
+              <div className="min-w-0">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[var(--accent-deep)]">
+                  Creative Sales Solutions
+                </div>
+                <h1 className="mt-2 text-[2rem] leading-none text-[var(--ink)]">The Hub</h1>
+                <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--accent-deep)]">
+                  <span className="rounded-full bg-white/70 px-3 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    CSC
+                  </span>
+                  <span className="rounded-full bg-[rgba(95,70,137,0.12)] px-3 py-1.5">
+                    Live workspace
+                  </span>
+                </div>
+              </div>
             </div>
-            <h1 className="mt-3 text-3xl font-semibold">The Hub</h1>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-              One shared workspace for supplier follow-up, project progress, task ownership, and daily execution.
-            </p>
-          </div>
-
-          <div className="mt-6 rounded-[24px] border border-[var(--line)] bg-white/60 p-4">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--accent-strong)]">
-              Today&apos;s focus
-            </div>
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-              Keep the team aligned on what needs attention now, without relying on scattered notes and spreadsheets.
-            </p>
-          </div>
+          </Link>
 
           <nav className="mt-6 grid gap-2">
             {navItems.map(({ href, label, icon: Icon }) => {
@@ -62,22 +84,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
         </aside>
 
-        <div className="min-w-0">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[30px] border border-[var(--line)] bg-white/60 px-5 py-4 shadow-[0_12px_30px_rgba(114,94,147,0.08)]">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
-                The Hub
-              </div>
-              <div className="mt-2 text-lg font-medium text-[var(--ink)]">
-                Shared operating system for the Creative Sales team
-              </div>
-            </div>
-            <div className="rounded-full bg-[var(--accent-soft)] px-4 py-2 text-sm font-medium text-[var(--accent-deep)]">
-              Live workspace
-            </div>
-          </div>
-          {children}
-        </div>
+        <div className="min-w-0">{children}</div>
       </div>
     </div>
   );
