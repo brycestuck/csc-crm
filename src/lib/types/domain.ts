@@ -204,3 +204,80 @@ export type SupplierAccountView = {
   projectCount: number;
   openTaskCount: number;
 };
+
+export const leadershipAssignmentStatuses = [
+  "all",
+  "assigned",
+  "unassigned",
+  "multiple_owners",
+] as const;
+export type LeadershipAssignmentStatus = (typeof leadershipAssignmentStatuses)[number];
+
+export type LeadershipFilterState = {
+  teamMemberId: string | null;
+  supplierId: string | null;
+  retailerId: string | null;
+  assignmentStatus: LeadershipAssignmentStatus;
+};
+
+export type LeadershipPersonRow = {
+  id: string;
+  displayName: string;
+  email: string;
+  role: UserRole;
+  jobTitle: string | null;
+  avatarColor: string;
+  avatarImagePath: string | null;
+  supplierCount: number;
+  accountCount: number;
+  retailerCount: number;
+  activeProjectCount: number;
+  openTaskCount: number;
+  supplierNames: string[];
+  retailerNames: string[];
+  multiOwnerSupplierCount: number;
+};
+
+export type LeadershipSupplierRow = {
+  id: string;
+  name: string;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  ownerLabel: string;
+  accountCount: number;
+  activeProjectCount: number;
+  openTaskCount: number;
+  isUnassigned: boolean;
+  isMultipleOwners: boolean;
+  accounts: SupplierAccountView[];
+  projects: {
+    id: string;
+    name: string;
+    ownerUserId: string | null;
+    ownerName: string | null;
+    retailerName: string;
+    stageName: string | null;
+  }[];
+  tasks: {
+    id: string;
+    title: string;
+    ownerUserId: string | null;
+    ownerName: string | null;
+    status: TaskStatus;
+    retailerName: string | null;
+    projectName: string | null;
+  }[];
+};
+
+export type LeadershipRetailerRow = {
+  id: string;
+  name: string;
+  supplierCount: number;
+  accountCount: number;
+  activeProjectCount: number;
+  openTaskCount: number;
+  ownerBreakdown: { userId: string; displayName: string; count: number }[];
+  isUnassigned: boolean;
+  isMultipleOwners: boolean;
+  accounts: SupplierAccountView[];
+};

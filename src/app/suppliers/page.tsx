@@ -35,9 +35,9 @@ export default async function SuppliersPage() {
           <FormDrawer
             triggerLabel="Add Supplier"
             title="Add supplier"
-            description="Create a new supplier workspace and assign a fallback owner if needed."
+            description="Create a new supplier workspace."
           >
-            <CreateSupplierForm users={data.users} embedded />
+            <CreateSupplierForm embedded />
           </FormDrawer>
         </div>
 

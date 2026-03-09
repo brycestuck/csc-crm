@@ -1,8 +1,5 @@
 import { notFound } from "next/navigation";
 import {
-  AssignProjectOwnerForm,
-  AssignSupplierOwnerForm,
-  AssignTaskOwnerForm,
   CreateActivityForm,
   CreateProjectForm,
   CreateSupplierContactForm,
@@ -47,17 +44,6 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
           </div>
         </div>
 
-        <div className="mt-4 border-t border-zinc-200 pt-4">
-          <p className="section-kicker">Fallback supplier owner</p>
-          <div className="mt-2">
-            <AssignSupplierOwnerForm
-              entityId={params.id}
-              ownerUserId={data.supplier.ownerUserId}
-              returnTo={`/suppliers/${params.id}`}
-              users={data.users}
-            />
-          </div>
-        </div>
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -163,12 +149,6 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
                       stages={data.stages}
                       currentStageId={project.stageId}
                     />
-                    <AssignProjectOwnerForm
-                      entityId={project.id}
-                      ownerUserId={project.ownerUserId}
-                      returnTo={`/suppliers/${params.id}`}
-                      users={data.users}
-                    />
                   </div>
                 </div>
               ))}
@@ -191,12 +171,6 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="pill font-mono">{task.status}</span>
-                      <AssignTaskOwnerForm
-                        entityId={task.id}
-                        ownerUserId={task.ownerUserId}
-                        returnTo={`/suppliers/${params.id}`}
-                        users={data.users}
-                      />
                       <TaskStatusForm taskId={task.id} returnTo={`/suppliers/${params.id}`} currentStatus={task.status} />
                     </div>
                   </div>
@@ -232,10 +206,9 @@ export default async function SupplierDetailPage({ params }: { params: { id: str
             supplierId={params.id}
             retailers={data.retailers}
             stages={data.stages}
-            users={data.users}
             returnTo={`/suppliers/${params.id}`}
           />
-          <CreateTaskForm supplierId={params.id} returnTo={`/suppliers/${params.id}`} projects={data.projectOptions} users={data.users} />
+          <CreateTaskForm supplierId={params.id} returnTo={`/suppliers/${params.id}`} projects={data.projectOptions} />
           <CreateSupplierContactForm supplierId={params.id} />
           {data.projectOptions.length > 0 ? (
             <CreateActivityForm projects={data.projectOptions} returnTo={`/suppliers/${params.id}`} />

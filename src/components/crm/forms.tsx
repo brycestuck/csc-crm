@@ -1,4 +1,5 @@
 import {
+  assignAccountOwnersAction,
   assignProjectOwnerAction,
   assignSupplierOwnerAction,
   assignTaskOwnerAction,
@@ -68,6 +69,8 @@ type OwnerSelectFormProps = {
   ownerUserId: string | null;
   returnTo: string;
   users: UserOption[];
+  emptyLabel?: string;
+  buttonLabel?: string;
   action: (formData: FormData) => void | Promise<void>;
 };
 
@@ -77,43 +80,36 @@ function OwnerSelectForm({
   ownerUserId,
   returnTo,
   users,
+  emptyLabel = "Unassigned",
+  buttonLabel = "Save",
   action,
 }: OwnerSelectFormProps) {
   return (
     <form action={action} className="flex flex-wrap items-center gap-2">
       <input type="hidden" name={entityIdName} value={entityId} />
       <input type="hidden" name="returnTo" value={returnTo} />
-      <select name="ownerUserId" defaultValue={ownerUserId || users[0]?.id || ""} className="input-control w-auto min-w-[220px]">
+      <select name="ownerUserId" defaultValue={ownerUserId || ""} className="input-control w-auto min-w-[220px]">
+        <option value="">{emptyLabel}</option>
         {users.map((user) => (
           <option key={user.id} value={user.id}>
             {ownerOptionLabel(user)}
           </option>
         ))}
       </select>
-      <button className="btn-secondary">Assign</button>
+      <button className="btn-secondary">{buttonLabel}</button>
     </form>
   );
 }
 
 export function CreateSupplierForm({
-  users,
   embedded = false,
 }: {
-  users: UserOption[];
   embedded?: boolean;
 }) {
   return (
     <form action={createSupplierAction} className={cardClassName(embedded)}>
       {!embedded ? <h2 className={sectionTitleClassName()}>Add supplier</h2> : null}
       <input name="name" placeholder="Supplier name" required className={inputClassName()} />
-      <select name="ownerUserId" defaultValue="" className={inputClassName()}>
-        <option value="">No fallback owner</option>
-        {users.map((user) => (
-          <option key={user.id} value={user.id}>
-            {ownerOptionLabel(user)}
-          </option>
-        ))}
-      </select>
       <textarea name="summary" placeholder="Short summary" rows={3} className={inputClassName()} />
       <textarea name="notes" placeholder="Internal notes" rows={4} className={inputClassName()} />
       <button className="btn-primary">Create supplier</button>
@@ -167,7 +163,15 @@ export function CreateSupplierContactForm({ supplierId }: { supplierId: string }
 }
 
 export function AssignSupplierOwnerForm(props: Omit<OwnerSelectFormProps, "entityIdName" | "action">) {
-  return <OwnerSelectForm {...props} entityIdName="supplierId" action={assignSupplierOwnerAction} />;
+  return (
+    <OwnerSelectForm
+      {...props}
+      entityIdName="supplierId"
+      emptyLabel="No fallback owner"
+      buttonLabel="Save"
+      action={assignSupplierOwnerAction}
+    />
+  );
 }
 
 export function CreateProjectForm({
@@ -175,14 +179,12 @@ export function CreateProjectForm({
   supplierOptions,
   retailers,
   stages,
-  users,
   returnTo,
 }: {
   supplierId?: string;
   supplierOptions?: SupplierOption[];
   retailers: RetailerOption[];
   stages: StageOption[];
-  users: UserOption[];
   returnTo: string;
 }) {
   return (
@@ -202,14 +204,6 @@ export function CreateProjectForm({
           ))}
         </select>
       ) : null}
-      <select name="ownerUserId" defaultValue="" className={inputClassName()}>
-        <option value="">Use account owner</option>
-        {users.map((user) => (
-          <option key={user.id} value={user.id}>
-            {ownerOptionLabel(user)}
-          </option>
-        ))}
-      </select>
       <input name="name" placeholder="Project name" required className={inputClassName()} />
       <select name="retailerId" required defaultValue="" className={inputClassName()}>
         <option value="" disabled>
@@ -242,7 +236,15 @@ export function CreateProjectForm({
 }
 
 export function AssignProjectOwnerForm(props: Omit<OwnerSelectFormProps, "entityIdName" | "action">) {
-  return <OwnerSelectForm {...props} entityIdName="projectId" action={assignProjectOwnerAction} />;
+  return (
+    <OwnerSelectForm
+      {...props}
+      entityIdName="projectId"
+      emptyLabel="Unassigned"
+      buttonLabel="Save"
+      action={assignProjectOwnerAction}
+    />
+  );
 }
 
 export function CreateTaskForm({
@@ -250,13 +252,11 @@ export function CreateTaskForm({
   supplierOptions,
   returnTo,
   projects,
-  users,
 }: {
   supplierId?: string;
   supplierOptions?: SupplierOption[];
   returnTo: string;
   projects: ProjectOption[];
-  users: UserOption[];
 }) {
   return (
     <form action={createTaskAction} className={cardClassName()}>
@@ -275,14 +275,6 @@ export function CreateTaskForm({
           ))}
         </select>
       ) : null}
-      <select name="ownerUserId" defaultValue="" className={inputClassName()}>
-        <option value="">Use project owner</option>
-        {users.map((user) => (
-          <option key={user.id} value={user.id}>
-            {ownerOptionLabel(user)}
-          </option>
-        ))}
-      </select>
       <input name="title" placeholder="Task title" required className={inputClassName()} />
       <select name="projectId" defaultValue="" className={inputClassName()}>
         <option value="">No project</option>
@@ -306,7 +298,15 @@ export function CreateTaskForm({
 }
 
 export function AssignTaskOwnerForm(props: Omit<OwnerSelectFormProps, "entityIdName" | "action">) {
-  return <OwnerSelectForm {...props} entityIdName="taskId" action={assignTaskOwnerAction} />;
+  return (
+    <OwnerSelectForm
+      {...props}
+      entityIdName="taskId"
+      emptyLabel="Unassigned"
+      buttonLabel="Save"
+      action={assignTaskOwnerAction}
+    />
+  );
 }
 
 export function CreateActivityForm({
@@ -403,6 +403,44 @@ export function TaskStatusForm({
       <input type="hidden" name="returnTo" value={returnTo} />
       <input type="hidden" name="nextStatus" value={nextStatus} />
       <button className="btn-secondary">{currentStatus === "done" ? "Reopen" : "Mark done"}</button>
+    </form>
+  );
+}
+
+export function AssignAccountOwnersForm({
+  accountId,
+  eamUserId,
+  spmUserId,
+  users,
+  returnTo,
+}: {
+  accountId: string;
+  eamUserId: string | null;
+  spmUserId: string | null;
+  users: UserOption[];
+  returnTo: string;
+}) {
+  return (
+    <form action={assignAccountOwnersAction} className="grid gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+      <input type="hidden" name="accountId" value={accountId} />
+      <input type="hidden" name="returnTo" value={returnTo} />
+      <select name="eamUserId" defaultValue={eamUserId || ""} className={inputClassName()}>
+        <option value="">No EAM</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {ownerOptionLabel(user)}
+          </option>
+        ))}
+      </select>
+      <select name="spmUserId" defaultValue={spmUserId || ""} className={inputClassName()}>
+        <option value="">No SPM</option>
+        {users.map((user) => (
+          <option key={user.id} value={user.id}>
+            {ownerOptionLabel(user)}
+          </option>
+        ))}
+      </select>
+      <button className="btn-secondary">Save</button>
     </form>
   );
 }

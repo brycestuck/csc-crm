@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { SignInScreen } from "@/components/auth/sign-in-screen";
 import { AppShell } from "@/components/crm/app-shell";
+import { getAuthErrorMessage, getCurrentUser } from "@/lib/auth/session";
+import { hasMicrosoftAuthConfig } from "@/lib/auth/microsoft";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -19,15 +22,24 @@ export const metadata: Metadata = {
   description: "Creative Sales Consulting CRM and project management platform.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const currentUser = await getCurrentUser();
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
-        <AppShell>{children}</AppShell>
+        {currentUser ? (
+          <AppShell currentUser={currentUser}>{children}</AppShell>
+        ) : (
+          <SignInScreen
+            authError={getAuthErrorMessage()}
+            microsoftConfigured={hasMicrosoftAuthConfig()}
+          />
+        )}
       </body>
     </html>
   );

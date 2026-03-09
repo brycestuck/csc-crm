@@ -3,11 +3,13 @@ import { FormDrawer } from "@/components/crm/form-drawer";
 import { CreateUserForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
 import { UserAvatar } from "@/components/crm/user-avatar";
+import { getCurrentUser } from "@/lib/auth/session";
 import { getTeamPageData, getWorkspaceStatus } from "@/lib/db/crm";
 
 export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
+  const currentUser = await getCurrentUser();
   const status = await getWorkspaceStatus();
   if (status.state !== "ready") {
     return <SetupState title="The Hub database is not ready" message={status.message} />;
@@ -23,13 +25,15 @@ export default async function TeamPage() {
             <p className="section-kicker">Team</p>
             <h1 className="mt-1 text-2xl font-semibold text-zinc-950">People and ownership</h1>
           </div>
-          <FormDrawer
-            triggerLabel="Add Team Member"
-            title="Add team member"
-            description="Create a profile so the person can own suppliers, accounts, projects, and tasks."
-          >
-            <CreateUserForm embedded />
-          </FormDrawer>
+          {currentUser?.role === "admin" ? (
+            <FormDrawer
+              triggerLabel="Add Team Member"
+              title="Add team member"
+              description="Create a profile so the person can sign in and own work."
+            >
+              <CreateUserForm embedded />
+            </FormDrawer>
+          ) : null}
         </div>
       </section>
 

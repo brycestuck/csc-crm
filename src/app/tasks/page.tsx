@@ -1,4 +1,4 @@
-import { AssignTaskOwnerForm, CreateTaskForm, TaskStatusForm } from "@/components/crm/forms";
+import { CreateTaskForm, TaskStatusForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
 import { getTasksPageData, getWorkspaceStatus } from "@/lib/db/crm";
 import { formatDate, formatRelativeDaysFromNow } from "@/lib/utils";
@@ -34,12 +34,6 @@ export default async function TasksPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="pill font-mono">{task.priority}</span>
                   <span className="pill font-mono">{task.status}</span>
-                  <AssignTaskOwnerForm
-                    entityId={task.id}
-                    ownerUserId={task.ownerUserId}
-                    returnTo="/tasks"
-                    users={data.users}
-                  />
                   <TaskStatusForm taskId={task.id} returnTo="/tasks" currentStatus={task.status} />
                 </div>
               </div>
@@ -49,7 +43,7 @@ export default async function TasksPage() {
       </section>
 
       <aside className="grid gap-4">
-        <CreateTaskForm supplierOptions={data.suppliers} projects={data.projects} users={data.users} returnTo="/tasks" />
+        <CreateTaskForm supplierOptions={data.suppliers} projects={data.projects} returnTo="/tasks" />
 
         <section className="panel p-4">
           <p className="section-kicker">Queue summary</p>

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { and, asc, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { cache } from "react";
 import { formatActivityTypeLabel } from "@/lib/activities/labels";
 import { getDb, getPool } from "@/lib/db/client";
 import {
@@ -24,6 +25,11 @@ import { defaultUserSeed, teamSeedUsers } from "@/lib/team/seed";
 import {
   pipelineStageSeeds,
   type ActivityType,
+  type LeadershipAssignmentStatus,
+  type LeadershipFilterState,
+  type LeadershipPersonRow,
+  type LeadershipRetailerRow,
+  type LeadershipSupplierRow,
   type ProjectPriority,
   type ProjectStatus,
   type SupplierContactRole,
@@ -272,6 +278,11 @@ async function getUserOptions(): Promise<UserOption[]> {
     .orderBy(asc(users.displayName));
 }
 
+export async function getAssignableUserOptions() {
+  await ensureWorkspaceSeeded();
+  return getUserOptions();
+}
+
 async function getSupplierAccountRows() {
   const db = getDb();
 
@@ -319,6 +330,38 @@ async function getProjectOptions(): Promise<ProjectOption[]> {
     .innerJoin(suppliers, eq(projects.supplierId, suppliers.id))
     .where(and(isNull(projects.deletedAt), isNull(suppliers.deletedAt)))
     .orderBy(asc(suppliers.name), asc(projects.name));
+}
+
+function normalizeLeadershipFilters(filters?: Partial<LeadershipFilterState>): LeadershipFilterState {
+  return {
+    teamMemberId: filters?.teamMemberId || null,
+    supplierId: filters?.supplierId || null,
+    retailerId: filters?.retailerId || null,
+    assignmentStatus: filters?.assignmentStatus || "all",
+  };
+}
+
+function hasAnyFilter(filters: LeadershipFilterState) {
+  return Boolean(
+    filters.teamMemberId || filters.supplierId || filters.retailerId || filters.assignmentStatus !== "all"
+  );
+}
+
+function matchAssignmentStatus(options: {
+  assignmentStatus: LeadershipAssignmentStatus;
+  isUnassigned: boolean;
+  isMultipleOwners: boolean;
+}) {
+  switch (options.assignmentStatus) {
+    case "assigned":
+      return !options.isUnassigned && !options.isMultipleOwners;
+    case "unassigned":
+      return options.isUnassigned;
+    case "multiple_owners":
+      return options.isMultipleOwners;
+    default:
+      return true;
+  }
 }
 
 export async function getDashboardData() {
@@ -1077,6 +1120,722 @@ export async function getTeamMemberDetailData(userId: string) {
   };
 }
 
+type LeadershipAccountRecord = {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  retailerId: string;
+  retailerName: string;
+  sourceCustomerName: string;
+  eamUserId: string | null;
+  eamDisplayName: string | null;
+  spmUserId: string | null;
+  spmDisplayName: string | null;
+  projectCount: number;
+  openTaskCount: number;
+};
+
+type LeadershipProjectRecord = {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  retailerId: string;
+  retailerName: string;
+  name: string;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  status: ProjectStatus;
+  stageName: string | null;
+};
+
+type LeadershipTaskRecord = {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  retailerId: string | null;
+  retailerName: string | null;
+  projectId: string | null;
+  projectName: string | null;
+  title: string;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  status: TaskStatus;
+};
+
+type LeadershipSupplierRecord = Omit<LeadershipSupplierRow, "projects" | "tasks"> & {
+  projects: LeadershipProjectRecord[];
+  tasks: LeadershipTaskRecord[];
+  supplierIds: string[];
+  retailerIds: string[];
+};
+
+type LeadershipRetailerRecord = LeadershipRetailerRow & {
+  supplierIds: string[];
+  retailerIds: string[];
+};
+
+type LeadershipPersonRecord = LeadershipPersonRow & {
+  supplierIds: string[];
+  retailerIds: string[];
+};
+
+function accountMatchesFilters(account: LeadershipAccountRecord, filters: LeadershipFilterState) {
+  if (filters.supplierId && account.supplierId !== filters.supplierId) {
+    return false;
+  }
+
+  if (filters.retailerId && account.retailerId !== filters.retailerId) {
+    return false;
+  }
+
+  if (
+    filters.teamMemberId &&
+    account.eamUserId !== filters.teamMemberId &&
+    account.spmUserId !== filters.teamMemberId
+  ) {
+    return false;
+  }
+
+  if (
+    !matchAssignmentStatus({
+      assignmentStatus: filters.assignmentStatus,
+      isUnassigned: !account.eamUserId && !account.spmUserId,
+      isMultipleOwners: false,
+    })
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function projectMatchesFilters(project: LeadershipProjectRecord, filters: LeadershipFilterState) {
+  if (filters.supplierId && project.supplierId !== filters.supplierId) {
+    return false;
+  }
+
+  if (filters.retailerId && project.retailerId !== filters.retailerId) {
+    return false;
+  }
+
+  if (filters.teamMemberId && project.ownerUserId !== filters.teamMemberId) {
+    return false;
+  }
+
+  if (
+    !matchAssignmentStatus({
+      assignmentStatus: filters.assignmentStatus,
+      isUnassigned: !project.ownerUserId,
+      isMultipleOwners: false,
+    })
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function taskMatchesFilters(task: LeadershipTaskRecord, filters: LeadershipFilterState) {
+  if (filters.supplierId && task.supplierId !== filters.supplierId) {
+    return false;
+  }
+
+  if (filters.retailerId && task.retailerId !== filters.retailerId) {
+    return false;
+  }
+
+  if (filters.teamMemberId && task.ownerUserId !== filters.teamMemberId) {
+    return false;
+  }
+
+  if (
+    !matchAssignmentStatus({
+      assignmentStatus: filters.assignmentStatus,
+      isUnassigned: !task.ownerUserId,
+      isMultipleOwners: false,
+    })
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+const getLeadershipBaseData = cache(async () => {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  const [
+    userDetailRows,
+    supplierRows,
+    retailerRows,
+    rawAccountRows,
+    projectRows,
+    taskRows,
+    supplierProjectCounts,
+    supplierTaskCounts,
+    supplierProjectCountsByRetailer,
+    supplierTaskCountsByRetailer,
+  ] = await Promise.all([
+    getDb()
+      .select({
+        id: users.id,
+        displayName: users.displayName,
+        email: users.email,
+        role: users.role,
+        jobTitle: users.jobTitle,
+        avatarColor: users.avatarColor,
+        avatarImagePath: users.avatarImagePath,
+      })
+      .from(users)
+      .where(and(isNull(users.deletedAt), eq(users.isActive, true)))
+      .orderBy(asc(users.displayName)),
+    db
+      .select({
+        id: suppliers.id,
+        name: suppliers.name,
+        ownerUserId: suppliers.ownerUserId,
+        ownerName: users.displayName,
+      })
+      .from(suppliers)
+      .leftJoin(users, eq(suppliers.ownerUserId, users.id))
+      .where(isNull(suppliers.deletedAt))
+      .orderBy(asc(suppliers.name)),
+    getRetailerOptions(),
+    db
+      .select({
+        id: supplierAccounts.id,
+        supplierId: supplierAccounts.supplierId,
+        supplierName: suppliers.name,
+        retailerId: supplierAccounts.retailerId,
+        retailerName: retailers.name,
+        sourceCustomerName: supplierAccounts.sourceCustomerName,
+        eamUserId: supplierAccounts.eamUserId,
+        spmUserId: supplierAccounts.spmUserId,
+      })
+      .from(supplierAccounts)
+      .innerJoin(suppliers, eq(supplierAccounts.supplierId, suppliers.id))
+      .innerJoin(retailers, eq(supplierAccounts.retailerId, retailers.id))
+      .where(
+        and(
+          isNull(supplierAccounts.deletedAt),
+          isNull(suppliers.deletedAt),
+          isNull(retailers.deletedAt)
+        )
+      )
+      .orderBy(asc(suppliers.name), asc(retailers.name)),
+    db
+      .select({
+        id: projects.id,
+        supplierId: projects.supplierId,
+        supplierName: suppliers.name,
+        retailerId: projects.retailerId,
+        retailerName: retailers.name,
+        name: projects.name,
+        ownerUserId: projects.ownerUserId,
+        ownerName: users.displayName,
+        status: projects.status,
+        stageName: pipelineStages.name,
+      })
+      .from(projects)
+      .innerJoin(suppliers, eq(projects.supplierId, suppliers.id))
+      .innerJoin(retailers, eq(projects.retailerId, retailers.id))
+      .leftJoin(users, eq(projects.ownerUserId, users.id))
+      .leftJoin(pipelineStages, eq(projects.pipelineStageId, pipelineStages.id))
+      .where(and(isNull(projects.deletedAt), isNull(suppliers.deletedAt), isNull(retailers.deletedAt)))
+      .orderBy(asc(suppliers.name), asc(projects.name)),
+    db
+      .select({
+        id: tasks.id,
+        supplierId: tasks.supplierId,
+        supplierName: suppliers.name,
+        retailerId: tasks.retailerId,
+        retailerName: retailers.name,
+        projectId: tasks.projectId,
+        projectName: projects.name,
+        title: tasks.title,
+        ownerUserId: tasks.ownerUserId,
+        ownerName: users.displayName,
+        status: tasks.status,
+      })
+      .from(tasks)
+      .leftJoin(suppliers, eq(tasks.supplierId, suppliers.id))
+      .leftJoin(retailers, eq(tasks.retailerId, retailers.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .leftJoin(users, eq(tasks.ownerUserId, users.id))
+      .where(and(isNull(tasks.deletedAt), isNull(suppliers.deletedAt)))
+      .orderBy(asc(suppliers.name), asc(tasks.title)),
+    db
+      .select({ supplierId: projects.supplierId, count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(and(isNull(projects.deletedAt), eq(projects.status, "active")))
+      .groupBy(projects.supplierId),
+    db
+      .select({ supplierId: tasks.supplierId, count: sql<number>`count(*)::int` })
+      .from(tasks)
+      .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
+      .groupBy(tasks.supplierId),
+    db
+      .select({
+        supplierId: projects.supplierId,
+        retailerId: projects.retailerId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(projects)
+      .where(and(isNull(projects.deletedAt), eq(projects.status, "active")))
+      .groupBy(projects.supplierId, projects.retailerId),
+    db
+      .select({
+        supplierId: tasks.supplierId,
+        retailerId: tasks.retailerId,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(tasks)
+      .where(and(isNull(tasks.deletedAt), ne(tasks.status, "done")))
+      .groupBy(tasks.supplierId, tasks.retailerId),
+  ]);
+
+  const projectCountBySupplier = new Map(supplierProjectCounts.map((row) => [row.supplierId, row.count]));
+  const taskCountBySupplier = new Map(supplierTaskCounts.map((row) => [row.supplierId, row.count]));
+  const projectCountBySupplierRetailer = new Map(
+    supplierProjectCountsByRetailer.map((row) => [`${row.supplierId}:${row.retailerId}`, row.count])
+  );
+  const taskCountBySupplierRetailer = new Map(
+    supplierTaskCountsByRetailer.map((row) => [`${row.supplierId}:${row.retailerId}`, row.count])
+  );
+
+  const userNameLookup = new Map(
+    userDetailRows.map((user) => [user.id, { displayName: user.displayName, avatarColor: user.avatarColor }])
+  );
+
+  const normalizedAccounts: LeadershipAccountRecord[] = rawAccountRows.map((account) => ({
+    ...account,
+    eamDisplayName: account.eamUserId ? userNameLookup.get(account.eamUserId)?.displayName ?? null : null,
+    spmDisplayName: account.spmUserId ? userNameLookup.get(account.spmUserId)?.displayName ?? null : null,
+    projectCount: projectCountBySupplierRetailer.get(`${account.supplierId}:${account.retailerId}`) ?? 0,
+    openTaskCount: taskCountBySupplierRetailer.get(`${account.supplierId}:${account.retailerId}`) ?? 0,
+  }));
+
+  const accountsBySupplier = new Map<string, LeadershipAccountRecord[]>();
+  const accountsByRetailer = new Map<string, LeadershipAccountRecord[]>();
+
+  for (const account of normalizedAccounts) {
+    const supplierAccountsForRow = accountsBySupplier.get(account.supplierId) ?? [];
+    supplierAccountsForRow.push(account);
+    accountsBySupplier.set(account.supplierId, supplierAccountsForRow);
+
+    const retailerAccountsForRow = accountsByRetailer.get(account.retailerId) ?? [];
+    retailerAccountsForRow.push(account);
+    accountsByRetailer.set(account.retailerId, retailerAccountsForRow);
+  }
+
+  const supplierRecords: LeadershipSupplierRecord[] = supplierRows.map((supplier) => {
+    const supplierAccountsForRow = accountsBySupplier.get(supplier.id) ?? [];
+    const ownerSummary = deriveSupplierOwnerSummary(
+      supplierAccountsForRow.map((account) => ({
+        eamDisplayName: account.eamDisplayName,
+        eamUserId: account.eamUserId,
+      })),
+      supplier.ownerName ?? null,
+      supplier.ownerUserId
+    );
+    const supplierProjects = projectRows
+      .filter((project) => project.supplierId === supplier.id && project.status === "active")
+      .map((project) => ({
+        id: project.id,
+        supplierId: project.supplierId,
+        supplierName: project.supplierName,
+        retailerId: project.retailerId,
+        name: project.name,
+        ownerUserId: project.ownerUserId,
+        ownerName: project.ownerName,
+        status: project.status,
+        retailerName: project.retailerName,
+        stageName: project.stageName,
+      }));
+    const supplierTasks = taskRows
+      .filter((task) => task.supplierId === supplier.id && task.status !== "done")
+      .map((task) => ({
+        id: task.id,
+        supplierId: task.supplierId || supplier.id,
+        supplierName: task.supplierName || supplier.name,
+        retailerId: task.retailerId,
+        projectId: task.projectId,
+        title: task.title,
+        ownerUserId: task.ownerUserId,
+        ownerName: task.ownerName,
+        status: task.status,
+        retailerName: task.retailerName,
+        projectName: task.projectName,
+      }));
+    const retailerIds = Array.from(new Set(supplierAccountsForRow.map((account) => account.retailerId)));
+
+    return {
+      id: supplier.id,
+      name: supplier.name,
+      ownerUserId: supplier.ownerUserId,
+      ownerName: supplier.ownerName ?? null,
+      ownerLabel: ownerSummary.label,
+      accountCount: supplierAccountsForRow.length,
+      activeProjectCount: projectCountBySupplier.get(supplier.id) ?? 0,
+      openTaskCount: taskCountBySupplier.get(supplier.id) ?? 0,
+      isUnassigned: ownerSummary.label === "Unassigned",
+      isMultipleOwners: ownerSummary.label === "Multiple owners",
+      accounts: supplierAccountsForRow,
+      projects: supplierProjects,
+      tasks: supplierTasks,
+      supplierIds: [supplier.id],
+      retailerIds,
+    };
+  });
+
+  const retailerRecords: LeadershipRetailerRecord[] = retailerRows.map((retailer) => {
+    const retailerAccountsForRow = accountsByRetailer.get(retailer.id) ?? [];
+    const supplierIds = Array.from(new Set(retailerAccountsForRow.map((account) => account.supplierId)));
+    const ownerBreakdownMap = new Map<string, { userId: string; displayName: string; count: number }>();
+
+    for (const account of retailerAccountsForRow) {
+      for (const owner of [
+        account.eamUserId ? { userId: account.eamUserId, displayName: account.eamDisplayName } : null,
+        account.spmUserId ? { userId: account.spmUserId, displayName: account.spmDisplayName } : null,
+      ]) {
+        if (!owner?.displayName) {
+          continue;
+        }
+
+        const existing = ownerBreakdownMap.get(owner.userId) ?? {
+          userId: owner.userId,
+          displayName: owner.displayName,
+          count: 0,
+        };
+        existing.count += 1;
+        ownerBreakdownMap.set(owner.userId, existing);
+      }
+    }
+
+    const uniqueEamIds = new Set(
+      retailerAccountsForRow.map((account) => account.eamUserId).filter((value): value is string => Boolean(value))
+    );
+
+    return {
+      id: retailer.id,
+      name: retailer.name,
+      supplierCount: supplierIds.length,
+      accountCount: retailerAccountsForRow.length,
+      activeProjectCount: projectRows.filter(
+        (project) => project.retailerId === retailer.id && project.status === "active"
+      ).length,
+      openTaskCount: taskRows.filter(
+        (task) => task.retailerId === retailer.id && task.status !== "done"
+      ).length,
+      ownerBreakdown: Array.from(ownerBreakdownMap.values()).sort((left, right) => right.count - left.count),
+      isUnassigned: uniqueEamIds.size === 0,
+      isMultipleOwners: uniqueEamIds.size > 1,
+      accounts: retailerAccountsForRow,
+      supplierIds,
+      retailerIds: [retailer.id],
+    };
+  });
+
+  const personRecords: LeadershipPersonRecord[] = userDetailRows.map((user) => {
+    const ownedSuppliers = supplierRecords.filter((supplier) => supplier.ownerUserId === user.id);
+    const relatedAccounts = normalizedAccounts.filter(
+      (account) => account.eamUserId === user.id || account.spmUserId === user.id
+    );
+    const activeProjects = projectRows.filter(
+      (project) => project.ownerUserId === user.id && project.status === "active"
+    );
+    const openTasks = taskRows.filter((task) => task.ownerUserId === user.id && task.status !== "done");
+    const supplierIds = Array.from(
+      new Set([
+        ...ownedSuppliers.map((supplier) => supplier.id),
+        ...relatedAccounts.map((account) => account.supplierId),
+        ...activeProjects.map((project) => project.supplierId),
+        ...openTasks.map((task) => task.supplierId),
+      ].filter((supplierId): supplierId is string => Boolean(supplierId)))
+    );
+    const retailerIds = Array.from(
+      new Set([
+        ...relatedAccounts.map((account) => account.retailerId),
+        ...activeProjects.map((project) => project.retailerId),
+        ...openTasks
+          .map((task) => task.retailerId)
+          .filter((retailerId): retailerId is string => Boolean(retailerId)),
+      ].filter((retailerId): retailerId is string => Boolean(retailerId)))
+    );
+
+    return {
+      id: user.id,
+      displayName: user.displayName,
+      email: user.email,
+      role: user.role,
+      jobTitle: user.jobTitle,
+      avatarColor: user.avatarColor,
+      avatarImagePath: user.avatarImagePath,
+      supplierCount: ownedSuppliers.length,
+      accountCount: relatedAccounts.length,
+      retailerCount: retailerIds.length,
+      activeProjectCount: activeProjects.length,
+      openTaskCount: openTasks.length,
+      supplierNames: supplierIds
+        .map((supplierId) => supplierRecords.find((supplier) => supplier.id === supplierId)?.name)
+        .filter((name): name is string => Boolean(name)),
+      retailerNames: retailerIds
+        .map((retailerId) => retailerRecords.find((retailer) => retailer.id === retailerId)?.name)
+        .filter((name): name is string => Boolean(name)),
+      multiOwnerSupplierCount: supplierIds.filter(
+        (supplierId) => supplierRecords.find((supplier) => supplier.id === supplierId)?.isMultipleOwners
+      ).length,
+      supplierIds,
+      retailerIds,
+    };
+  });
+
+  return {
+    filterOptions: {
+      users: userDetailRows.map((user) => ({ id: user.id, name: user.displayName })),
+      suppliers: supplierRows.map((supplier) => ({ id: supplier.id, name: supplier.name })),
+      retailers: retailerRows,
+    },
+    accounts: normalizedAccounts,
+    projects: projectRows.filter((project) => project.status === "active"),
+    tasks: taskRows.filter((task) => task.status !== "done"),
+    people: personRecords,
+    suppliers: supplierRecords,
+    retailers: retailerRecords,
+  };
+});
+
+function getFilteredPeople(
+  rows: LeadershipPersonRecord[],
+  filters: LeadershipFilterState
+): LeadershipPersonRow[] {
+  return rows.filter((row) => {
+    if (filters.teamMemberId && row.id !== filters.teamMemberId) {
+      return false;
+    }
+
+    if (filters.supplierId && !row.supplierIds.includes(filters.supplierId)) {
+      return false;
+    }
+
+    if (filters.retailerId && !row.retailerIds.includes(filters.retailerId)) {
+      return false;
+    }
+
+    if (
+      !matchAssignmentStatus({
+        assignmentStatus: filters.assignmentStatus,
+        isUnassigned:
+          row.supplierCount === 0 &&
+          row.accountCount === 0 &&
+          row.activeProjectCount === 0 &&
+          row.openTaskCount === 0,
+        isMultipleOwners: row.multiOwnerSupplierCount > 0,
+      })
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function getFilteredSuppliers(
+  rows: LeadershipSupplierRecord[],
+  filters: LeadershipFilterState
+): LeadershipSupplierRow[] {
+  return rows
+    .map((row) => {
+      const accounts = row.accounts.filter((account) => accountMatchesFilters(account, filters));
+      const projects = row.projects.filter((project) => projectMatchesFilters(project, filters));
+      const tasks = row.tasks.filter((task) => taskMatchesFilters(task, filters));
+
+      return {
+        ...row,
+        accounts,
+        projects,
+        tasks,
+        accountCount: accounts.length,
+        activeProjectCount: projects.length,
+        openTaskCount: tasks.length,
+      };
+    })
+    .filter((row) => {
+      if (filters.supplierId && row.id !== filters.supplierId) {
+        return false;
+      }
+
+      if (filters.retailerId && !row.retailerIds.includes(filters.retailerId)) {
+        return false;
+      }
+
+      if (
+        filters.teamMemberId &&
+        row.ownerUserId !== filters.teamMemberId &&
+        !row.accounts.some(
+          (account) =>
+            account.eamUserId === filters.teamMemberId || account.spmUserId === filters.teamMemberId
+        ) &&
+        !row.projects.some((project) => project.ownerUserId === filters.teamMemberId) &&
+        !row.tasks.some((task) => task.ownerUserId === filters.teamMemberId)
+      ) {
+        return false;
+      }
+
+      if (
+        !matchAssignmentStatus({
+          assignmentStatus: filters.assignmentStatus,
+          isUnassigned: row.isUnassigned,
+          isMultipleOwners: row.isMultipleOwners,
+        })
+      ) {
+        return false;
+      }
+
+      if (hasAnyFilter(filters)) {
+        return (
+          row.accounts.length > 0 ||
+          row.projects.length > 0 ||
+          row.tasks.length > 0 ||
+          row.ownerUserId === filters.teamMemberId ||
+          row.id === filters.supplierId
+        );
+      }
+
+      return true;
+    });
+}
+
+function getFilteredRetailers(
+  rows: LeadershipRetailerRecord[],
+  filters: LeadershipFilterState
+): LeadershipRetailerRow[] {
+  return rows
+    .map((row) => {
+      const accounts = row.accounts.filter((account) => accountMatchesFilters(account, filters));
+      const ownerBreakdownMap = new Map<string, { userId: string; displayName: string; count: number }>();
+
+      for (const account of accounts) {
+        for (const owner of [
+          account.eamUserId ? { userId: account.eamUserId, displayName: account.eamDisplayName } : null,
+          account.spmUserId ? { userId: account.spmUserId, displayName: account.spmDisplayName } : null,
+        ]) {
+          if (!owner?.displayName) {
+            continue;
+          }
+
+          const existing = ownerBreakdownMap.get(owner.userId) ?? {
+            userId: owner.userId,
+            displayName: owner.displayName,
+            count: 0,
+          };
+          existing.count += 1;
+          ownerBreakdownMap.set(owner.userId, existing);
+        }
+      }
+
+      const supplierIds = Array.from(new Set(accounts.map((account) => account.supplierId)));
+      const uniqueEamIds = new Set(
+        accounts.map((account) => account.eamUserId).filter((value): value is string => Boolean(value))
+      );
+
+      return {
+        ...row,
+        accounts,
+        supplierCount: supplierIds.length,
+        accountCount: accounts.length,
+        activeProjectCount: accounts.reduce((sum, account) => sum + account.projectCount, 0),
+        openTaskCount: accounts.reduce((sum, account) => sum + account.openTaskCount, 0),
+        ownerBreakdown: Array.from(ownerBreakdownMap.values()).sort((left, right) => right.count - left.count),
+        isUnassigned: uniqueEamIds.size === 0,
+        isMultipleOwners: uniqueEamIds.size > 1,
+      };
+    })
+    .filter((row) => {
+      if (filters.retailerId && row.id !== filters.retailerId) {
+        return false;
+      }
+
+      if (filters.supplierId && !row.supplierIds.includes(filters.supplierId) && !row.accounts.some((account) => account.supplierId === filters.supplierId)) {
+        return false;
+      }
+
+      if (
+        filters.teamMemberId &&
+        !row.accounts.some(
+          (account) =>
+            account.eamUserId === filters.teamMemberId || account.spmUserId === filters.teamMemberId
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        !matchAssignmentStatus({
+          assignmentStatus: filters.assignmentStatus,
+          isUnassigned: row.isUnassigned,
+          isMultipleOwners: row.isMultipleOwners,
+        })
+      ) {
+        return false;
+      }
+
+      return !hasAnyFilter(filters) || row.accounts.length > 0 || row.id === filters.retailerId;
+    });
+}
+
+export async function getLeadershipFilterOptions() {
+  const base = await getLeadershipBaseData();
+  return base.filterOptions;
+}
+
+export async function getLeadershipOverviewData(filters?: Partial<LeadershipFilterState>) {
+  const normalizedFilters = normalizeLeadershipFilters(filters);
+  const base = await getLeadershipBaseData();
+  const suppliers = getFilteredSuppliers(base.suppliers, normalizedFilters);
+  const retailers = getFilteredRetailers(base.retailers, normalizedFilters);
+  const people = getFilteredPeople(base.people, normalizedFilters);
+
+  return {
+    peopleCount: people.length,
+    supplierCount: suppliers.length,
+    retailerCount: retailers.length,
+    accountCount: suppliers.reduce((sum, supplier) => sum + supplier.accounts.length, 0),
+    activeProjectCount: suppliers.reduce((sum, supplier) => sum + supplier.projects.length, 0),
+    openTaskCount: suppliers.reduce((sum, supplier) => sum + supplier.tasks.length, 0),
+    unassignedOwnershipCount:
+      suppliers.filter((supplier) => supplier.isUnassigned).length +
+      suppliers.reduce(
+        (sum, supplier) =>
+          sum +
+          supplier.accounts.filter((account) => !account.eamUserId && !account.spmUserId).length +
+          supplier.projects.filter((project) => !project.ownerUserId).length +
+          supplier.tasks.filter((task) => !task.ownerUserId).length,
+        0
+      ),
+    multiOwnerSupplierCount: suppliers.filter((supplier) => supplier.isMultipleOwners).length,
+  };
+}
+
+export async function getLeadershipPeopleData(filters?: Partial<LeadershipFilterState>) {
+  const normalizedFilters = normalizeLeadershipFilters(filters);
+  const base = await getLeadershipBaseData();
+  return getFilteredPeople(base.people, normalizedFilters);
+}
+
+export async function getLeadershipSuppliersData(filters?: Partial<LeadershipFilterState>) {
+  const normalizedFilters = normalizeLeadershipFilters(filters);
+  const base = await getLeadershipBaseData();
+  return getFilteredSuppliers(base.suppliers, normalizedFilters);
+}
+
+export async function getLeadershipRetailersData(filters?: Partial<LeadershipFilterState>) {
+  const normalizedFilters = normalizeLeadershipFilters(filters);
+  const base = await getLeadershipBaseData();
+  return getFilteredRetailers(base.retailers, normalizedFilters);
+}
+
 export async function createSupplier(input: {
   name: string;
   summary?: string;
@@ -1099,7 +1858,7 @@ export async function createSupplier(input: {
   return inserted[0].id;
 }
 
-export async function assignSupplierOwner(input: { supplierId: string; ownerUserId: string }) {
+export async function assignSupplierOwner(input: { supplierId: string; ownerUserId: string | null }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
@@ -1107,6 +1866,24 @@ export async function assignSupplierOwner(input: { supplierId: string; ownerUser
     .update(suppliers)
     .set({ ownerUserId: input.ownerUserId, updatedAt: new Date() })
     .where(eq(suppliers.id, input.supplierId));
+}
+
+export async function assignAccountOwners(input: {
+  accountId: string;
+  eamUserId: string | null;
+  spmUserId: string | null;
+}) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  await db
+    .update(supplierAccounts)
+    .set({
+      eamUserId: input.eamUserId,
+      spmUserId: input.spmUserId,
+      updatedAt: new Date(),
+    })
+    .where(eq(supplierAccounts.id, input.accountId));
 }
 
 async function resolveSupplierAccountOwnerUserId(supplierId: string, retailerId: string) {
@@ -1203,6 +1980,7 @@ export async function createProject(input: {
   pipelineStageId?: string;
   status?: ProjectStatus;
   ownerUserId?: string;
+  actorUserId?: string;
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
@@ -1222,6 +2000,7 @@ export async function createProject(input: {
     input.ownerUserId ||
     (await resolveSupplierAccountOwnerUserId(input.supplierId, input.retailerId)) ||
     (await resolveSupplierFallbackOwnerUserId(input.supplierId)) ||
+    input.actorUserId ||
     (await getDefaultUserId());
 
   const inserted = await db
@@ -1249,7 +2028,7 @@ export async function createProject(input: {
   return inserted[0].id;
 }
 
-export async function assignProjectOwner(input: { projectId: string; ownerUserId: string }) {
+export async function assignProjectOwner(input: { projectId: string; ownerUserId: string | null }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
@@ -1259,10 +2038,14 @@ export async function assignProjectOwner(input: { projectId: string; ownerUserId
     .where(eq(projects.id, input.projectId));
 }
 
-export async function updateProjectStage(input: { projectId: string; pipelineStageId: string }) {
+export async function updateProjectStage(input: {
+  projectId: string;
+  pipelineStageId: string;
+  changedByUserId?: string;
+}) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const changedByUserId = await getDefaultUserId();
+  const changedByUserId = input.changedByUserId || (await getDefaultUserId());
 
   const existing = await db
     .select({ stageId: projects.pipelineStageId })
@@ -1295,6 +2078,7 @@ export async function createTask(input: {
   dueDate?: string;
   priority: ProjectPriority;
   ownerUserId?: string;
+  actorUserId?: string;
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
@@ -1326,6 +2110,7 @@ export async function createTask(input: {
     projectOwnerUserId ||
     (retailerId ? await resolveSupplierAccountOwnerUserId(supplierId, retailerId) : null) ||
     (await resolveSupplierFallbackOwnerUserId(supplierId)) ||
+    input.actorUserId ||
     (await getDefaultUserId());
 
   await db.insert(tasks).values({
@@ -1341,7 +2126,7 @@ export async function createTask(input: {
   });
 }
 
-export async function assignTaskOwner(input: { taskId: string; ownerUserId: string }) {
+export async function assignTaskOwner(input: { taskId: string; ownerUserId: string | null }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
 
@@ -1370,10 +2155,11 @@ export async function createActivity(input: {
   subject: string;
   body?: string;
   activityType: ActivityType;
+  userId?: string;
 }) {
   await ensureWorkspaceSeeded();
   const db = getDb();
-  const userId = await getDefaultUserId();
+  const userId = input.userId || (await getDefaultUserId());
 
   await db.insert(activities).values({
     projectId: input.projectId,

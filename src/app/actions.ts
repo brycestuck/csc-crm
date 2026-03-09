@@ -3,7 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireAdmin, requireUser } from "@/lib/auth/session";
 import {
+  assignAccountOwners,
   assignProjectOwner,
   assignSupplierOwner,
   assignTaskOwner,
@@ -92,23 +94,31 @@ const taskStatusSchema = z.object({
 
 const supplierOwnerSchema = z.object({
   supplierId: z.string().uuid(),
-  ownerUserId: z.string().uuid(),
+  ownerUserId: z.string().uuid().optional().or(z.literal("")),
   returnTo: z.string().default("/suppliers"),
 });
 
 const projectOwnerSchema = z.object({
   projectId: z.string().uuid(),
-  ownerUserId: z.string().uuid(),
+  ownerUserId: z.string().uuid().optional().or(z.literal("")),
   returnTo: z.string().default("/projects"),
 });
 
 const taskOwnerSchema = z.object({
   taskId: z.string().uuid(),
-  ownerUserId: z.string().uuid(),
+  ownerUserId: z.string().uuid().optional().or(z.literal("")),
   returnTo: z.string().default("/tasks"),
 });
 
+const accountOwnerSchema = z.object({
+  accountId: z.string().uuid(),
+  eamUserId: z.string().uuid().optional().or(z.literal("")),
+  spmUserId: z.string().uuid().optional().or(z.literal("")),
+  returnTo: z.string().default("/leadership"),
+});
+
 export async function createSupplierAction(formData: FormData) {
+  const currentUser = await requireUser();
   const parsed = supplierSchema.parse({
     name: formData.get("name"),
     summary: formData.get("summary"),
@@ -118,7 +128,7 @@ export async function createSupplierAction(formData: FormData) {
 
   const supplierId = await createSupplier({
     ...parsed,
-    ownerUserId: parsed.ownerUserId || undefined,
+    ownerUserId: currentUser.role === "admin" ? parsed.ownerUserId || undefined : undefined,
   });
   revalidatePath("/");
   revalidatePath("/suppliers");
@@ -126,6 +136,7 @@ export async function createSupplierAction(formData: FormData) {
 }
 
 export async function createUserAction(formData: FormData) {
+  await requireAdmin();
   const parsed = userSchema.parse({
     displayName: formData.get("displayName"),
     email: formData.get("email"),
@@ -146,6 +157,7 @@ export async function createUserAction(formData: FormData) {
 }
 
 export async function createSupplierContactAction(formData: FormData) {
+  await requireUser();
   const parsed = supplierContactSchema.parse({
     supplierId: formData.get("supplierId"),
     fullName: formData.get("fullName"),
@@ -168,20 +180,26 @@ export async function createSupplierContactAction(formData: FormData) {
 }
 
 export async function assignSupplierOwnerAction(formData: FormData) {
+  await requireAdmin();
   const parsed = supplierOwnerSchema.parse({
     supplierId: formData.get("supplierId"),
     ownerUserId: formData.get("ownerUserId"),
     returnTo: formData.get("returnTo"),
   });
 
-  await assignSupplierOwner(parsed);
+  await assignSupplierOwner({
+    supplierId: parsed.supplierId,
+    ownerUserId: parsed.ownerUserId || null,
+  });
   revalidatePath("/");
   revalidatePath("/suppliers");
   revalidatePath("/team");
+  revalidatePath("/leadership");
   revalidatePath(parsed.returnTo);
 }
 
 export async function createProjectAction(formData: FormData) {
+  const currentUser = await requireUser();
   const parsed = projectSchema.parse({
     supplierId: formData.get("supplierId"),
     name: formData.get("name"),
@@ -196,7 +214,8 @@ export async function createProjectAction(formData: FormData) {
   await createProject({
     ...parsed,
     pipelineStageId: parsed.pipelineStageId || undefined,
-    ownerUserId: parsed.ownerUserId || undefined,
+    ownerUserId: currentUser.role === "admin" ? parsed.ownerUserId || undefined : undefined,
+    actorUserId: currentUser.id,
   });
 
   const supplierPath = `/suppliers/${parsed.supplierId}`;
@@ -210,33 +229,44 @@ export async function createProjectAction(formData: FormData) {
 }
 
 export async function assignProjectOwnerAction(formData: FormData) {
+  await requireAdmin();
   const parsed = projectOwnerSchema.parse({
     projectId: formData.get("projectId"),
     ownerUserId: formData.get("ownerUserId"),
     returnTo: formData.get("returnTo"),
   });
 
-  await assignProjectOwner(parsed);
+  await assignProjectOwner({
+    projectId: parsed.projectId,
+    ownerUserId: parsed.ownerUserId || null,
+  });
   revalidatePath("/");
   revalidatePath("/projects");
   revalidatePath("/team");
+  revalidatePath("/leadership");
   revalidatePath(parsed.returnTo);
 }
 
 export async function updateProjectStageAction(formData: FormData) {
+  const currentUser = await requireUser();
   const parsed = projectStageSchema.parse({
     projectId: formData.get("projectId"),
     pipelineStageId: formData.get("pipelineStageId"),
   });
 
   const returnTo = String(formData.get("returnTo") || "/projects");
-  await updateProjectStage(parsed);
+  await updateProjectStage({
+    projectId: parsed.projectId,
+    pipelineStageId: parsed.pipelineStageId,
+    changedByUserId: currentUser.id,
+  });
   revalidatePath("/");
   revalidatePath("/projects");
   revalidatePath(returnTo);
 }
 
 export async function createTaskAction(formData: FormData) {
+  const currentUser = await requireUser();
   const parsed = taskSchema.parse({
     supplierId: formData.get("supplierId"),
     projectId: formData.get("projectId"),
@@ -251,7 +281,8 @@ export async function createTaskAction(formData: FormData) {
     ...parsed,
     projectId: parsed.projectId || undefined,
     dueDate: parsed.dueDate || undefined,
-    ownerUserId: parsed.ownerUserId || undefined,
+    ownerUserId: currentUser.role === "admin" ? parsed.ownerUserId || undefined : undefined,
+    actorUserId: currentUser.id,
   });
   revalidatePath("/");
   revalidatePath("/tasks");
@@ -261,20 +292,26 @@ export async function createTaskAction(formData: FormData) {
 }
 
 export async function assignTaskOwnerAction(formData: FormData) {
+  await requireAdmin();
   const parsed = taskOwnerSchema.parse({
     taskId: formData.get("taskId"),
     ownerUserId: formData.get("ownerUserId"),
     returnTo: formData.get("returnTo"),
   });
 
-  await assignTaskOwner(parsed);
+  await assignTaskOwner({
+    taskId: parsed.taskId,
+    ownerUserId: parsed.ownerUserId || null,
+  });
   revalidatePath("/");
   revalidatePath("/tasks");
   revalidatePath("/team");
+  revalidatePath("/leadership");
   revalidatePath(parsed.returnTo);
 }
 
 export async function toggleTaskStatusAction(formData: FormData) {
+  await requireUser();
   const parsed = taskStatusSchema.parse({
     taskId: formData.get("taskId"),
     nextStatus: formData.get("nextStatus"),
@@ -289,6 +326,7 @@ export async function toggleTaskStatusAction(formData: FormData) {
 }
 
 export async function createActivityAction(formData: FormData) {
+  const currentUser = await requireUser();
   const parsed = activitySchema.parse({
     projectId: formData.get("projectId"),
     subject: formData.get("subject"),
@@ -297,9 +335,36 @@ export async function createActivityAction(formData: FormData) {
   });
 
   const returnTo = String(formData.get("returnTo") || "/activity");
-  await createActivity(parsed);
+  await createActivity({
+    ...parsed,
+    userId: currentUser.id,
+  });
   revalidatePath("/");
   revalidatePath("/activity");
   revalidatePath(returnTo);
   redirect(returnTo);
+}
+
+export async function assignAccountOwnersAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = accountOwnerSchema.parse({
+    accountId: formData.get("accountId"),
+    eamUserId: formData.get("eamUserId"),
+    spmUserId: formData.get("spmUserId"),
+    returnTo: formData.get("returnTo"),
+  });
+
+  await assignAccountOwners({
+    accountId: parsed.accountId,
+    eamUserId: parsed.eamUserId || null,
+    spmUserId: parsed.spmUserId || null,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/suppliers");
+  revalidatePath("/projects");
+  revalidatePath("/tasks");
+  revalidatePath("/team");
+  revalidatePath("/leadership");
+  revalidatePath(parsed.returnTo);
 }

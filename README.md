@@ -5,6 +5,9 @@ Operational supplier-first workspace for Creative Sales Solutions, built for Rep
 ## Current product slice
 
 - Dashboard with live metrics from Postgres
+- Microsoft sign-in with CSC roster enforcement
+- Persistent signed-in identity block in the shell
+- Admin-only `Leadership` command center for reassignment and ownership oversight
 - Team page with user profiles and ownership views
 - Supplier workspace with:
   - supplier records
@@ -28,7 +31,11 @@ Operational supplier-first workspace for Creative Sales Solutions, built for Rep
 Copy `.env.example` to `.env.local` and set at minimum:
 
 - `DATABASE_URL`
-- Microsoft Graph credentials for later auth and sync work
+- `MICROSOFT_CLIENT_ID`
+- `MICROSOFT_CLIENT_SECRET`
+- `MICROSOFT_TENANT_ID`
+- `MICROSOFT_REDIRECT_URI`
+- `SESSION_SECRET`
 
 ## Replit hosting
 
@@ -64,7 +71,9 @@ npm run db:push
 
 - The first launch into an empty database seeds pipeline stages, core retailers, a default admin user, sample suppliers, sample projects, sample tasks, sample activities, sample buyers, and supplier contacts.
 - After pulling schema changes, run `npm run db:push` again so new columns like team profile fields are applied to Replit Postgres.
+- Microsoft login now gates the app. Users must exist in the seeded/team roster and sign in with that exact CSC Microsoft account.
+- Set `MICROSOFT_REDIRECT_URI` to the live Replit callback URL, for example `https://your-repl-domain/api/auth/callback`.
+- Leadership reassignment now lives at `/leadership` and is only visible to `admin` users.
 - Finance schema additions are present but intentionally unused by CRM UI and routes at this stage.
 - No finance-specific screens, jobs, or endpoints are included yet.
-- Auth is not implemented yet. The current operational slice assumes a shared internal workspace and uses a seeded admin user for record attribution.
-- The next major build slices are Microsoft auth, inbox sync, calendar sync, spreadsheet imports, and leadership reporting.
+- The next major build slices are inbox sync, calendar sync, spreadsheet imports, and leadership reporting refinements.

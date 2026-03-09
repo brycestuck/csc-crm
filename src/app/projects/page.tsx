@@ -1,4 +1,4 @@
-import { AssignProjectOwnerForm, CreateProjectForm, ProjectStageForm } from "@/components/crm/forms";
+import { CreateProjectForm, ProjectStageForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
 import { getProjectsPageData, getWorkspaceStatus } from "@/lib/db/crm";
 
@@ -50,12 +50,6 @@ export default async function ProjectsPage() {
                   stages={data.stages}
                   currentStageId={project.stageId}
                 />
-                <AssignProjectOwnerForm
-                  entityId={project.id}
-                  ownerUserId={project.ownerUserId}
-                  returnTo="/projects"
-                  users={data.users}
-                />
               </div>
             </article>
           ))}
@@ -67,7 +61,6 @@ export default async function ProjectsPage() {
           supplierOptions={data.suppliers}
           retailers={data.retailers}
           stages={data.stages}
-          users={data.users}
           returnTo="/projects"
         />
 
