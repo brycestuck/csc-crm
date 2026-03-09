@@ -15,6 +15,8 @@ import {
   createSupplierContact,
   createTask,
   createUser,
+  deleteSupplier,
+  deleteUser,
   toggleTaskStatus,
   updateProjectStage,
 } from "@/lib/db/crm";
@@ -115,6 +117,16 @@ const accountOwnerSchema = z.object({
   eamUserId: z.string().uuid().optional().or(z.literal("")),
   spmUserId: z.string().uuid().optional().or(z.literal("")),
   returnTo: z.string().default("/leadership"),
+});
+
+const deleteSupplierSchema = z.object({
+  supplierId: z.string().uuid(),
+  returnTo: z.string().default("/suppliers"),
+});
+
+const deleteUserSchema = z.object({
+  userId: z.string().uuid(),
+  returnTo: z.string().default("/team"),
 });
 
 export async function createSupplierAction(formData: FormData) {
@@ -367,4 +379,47 @@ export async function assignAccountOwnersAction(formData: FormData) {
   revalidatePath("/team");
   revalidatePath("/leadership");
   revalidatePath(parsed.returnTo);
+}
+
+export async function deleteSupplierAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = deleteSupplierSchema.parse({
+    supplierId: formData.get("supplierId"),
+    returnTo: formData.get("returnTo"),
+  });
+
+  await deleteSupplier({ supplierId: parsed.supplierId });
+
+  revalidatePath("/");
+  revalidatePath("/suppliers");
+  revalidatePath("/projects");
+  revalidatePath("/tasks");
+  revalidatePath("/activity");
+  revalidatePath("/team");
+  revalidatePath("/leadership");
+  revalidatePath(parsed.returnTo);
+  redirect(parsed.returnTo);
+}
+
+export async function deleteUserAction(formData: FormData) {
+  const currentUser = await requireAdmin();
+  const parsed = deleteUserSchema.parse({
+    userId: formData.get("userId"),
+    returnTo: formData.get("returnTo"),
+  });
+
+  await deleteUser({
+    userId: parsed.userId,
+    actorUserId: currentUser.id,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/suppliers");
+  revalidatePath("/projects");
+  revalidatePath("/tasks");
+  revalidatePath("/activity");
+  revalidatePath("/team");
+  revalidatePath("/leadership");
+  revalidatePath(parsed.returnTo);
+  redirect(parsed.returnTo);
 }

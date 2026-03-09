@@ -1,6 +1,6 @@
 import "server-only";
 
-import { and, asc, desc, eq, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { cache } from "react";
 import { formatActivityTypeLabel } from "@/lib/activities/labels";
 import { getDb, getPool } from "@/lib/db/client";
@@ -2169,4 +2169,123 @@ export async function createActivity(input: {
     userId,
     contactType: "internal",
   });
+}
+
+export async function deleteSupplier(input: { supplierId: string }) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+  const now = new Date();
+  const supplierProjectIds = (
+    await db
+      .select({ id: projects.id })
+      .from(projects)
+      .where(and(eq(projects.supplierId, input.supplierId), isNull(projects.deletedAt)))
+  ).map((project) => project.id);
+
+  if (supplierProjectIds.length > 0) {
+    await db
+      .update(activities)
+      .set({ deletedAt: now })
+      .where(and(inArray(activities.projectId, supplierProjectIds), isNull(activities.deletedAt)));
+  }
+
+  await db
+    .update(tasks)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(and(eq(tasks.supplierId, input.supplierId), isNull(tasks.deletedAt)));
+
+  await db
+    .update(projects)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(and(eq(projects.supplierId, input.supplierId), isNull(projects.deletedAt)));
+
+  await db
+    .update(supplierContacts)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(and(eq(supplierContacts.supplierId, input.supplierId), isNull(supplierContacts.deletedAt)));
+
+  await db
+    .update(supplierAccounts)
+    .set({ deletedAt: now, updatedAt: now })
+    .where(and(eq(supplierAccounts.supplierId, input.supplierId), isNull(supplierAccounts.deletedAt)));
+
+  await db
+    .update(suppliers)
+    .set({ deletedAt: now, updatedAt: now, ownerUserId: null })
+    .where(and(eq(suppliers.id, input.supplierId), isNull(suppliers.deletedAt)));
+}
+
+export async function deleteUser(input: { userId: string; actorUserId: string }) {
+  await ensureWorkspaceSeeded();
+  const db = getDb();
+
+  if (input.userId === input.actorUserId) {
+    throw new Error("You cannot delete your own user profile.");
+  }
+
+  const adminCount = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(users)
+    .where(
+      and(
+        isNull(users.deletedAt),
+        eq(users.isActive, true),
+        eq(users.role, "admin"),
+        ne(users.id, input.userId)
+      )
+    );
+
+  const target = await db
+    .select({ role: users.role })
+    .from(users)
+    .where(and(eq(users.id, input.userId), isNull(users.deletedAt)))
+    .limit(1);
+
+  if (!target[0]) {
+    return;
+  }
+
+  if (target[0].role === "admin" && (adminCount[0]?.count ?? 0) < 1) {
+    throw new Error("You cannot delete the last admin.");
+  }
+
+  const now = new Date();
+
+  await db
+    .update(supplierAccounts)
+    .set({
+      eamUserId: sql`case when ${supplierAccounts.eamUserId} = ${input.userId} then null else ${supplierAccounts.eamUserId} end`,
+      spmUserId: sql`case when ${supplierAccounts.spmUserId} = ${input.userId} then null else ${supplierAccounts.spmUserId} end`,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        isNull(supplierAccounts.deletedAt),
+        or(eq(supplierAccounts.eamUserId, input.userId), eq(supplierAccounts.spmUserId, input.userId))
+      )
+    );
+
+  await db
+    .update(suppliers)
+    .set({ ownerUserId: null, updatedAt: now })
+    .where(and(eq(suppliers.ownerUserId, input.userId), isNull(suppliers.deletedAt)));
+
+  await db
+    .update(projects)
+    .set({ ownerUserId: null, updatedAt: now })
+    .where(and(eq(projects.ownerUserId, input.userId), isNull(projects.deletedAt)));
+
+  await db
+    .update(tasks)
+    .set({ ownerUserId: null, updatedAt: now })
+    .where(and(eq(tasks.ownerUserId, input.userId), isNull(tasks.deletedAt)));
+
+  await db
+    .update(users)
+    .set({
+      deletedAt: now,
+      isActive: false,
+      updatedAt: now,
+    })
+    .where(and(eq(users.id, input.userId), isNull(users.deletedAt)));
 }
