@@ -38,6 +38,8 @@ const DEFAULT_USER = {
   role: "admin" as const,
 };
 
+let workspaceSeedPromise: Promise<WorkspaceStatus> | null = null;
+
 export type WorkspaceStatus =
   | { state: "missing-env"; message: string }
   | { state: "schema-missing"; message: string }
@@ -125,8 +127,19 @@ async function getDefaultUserId() {
     return existing[0].id;
   }
 
-  const inserted = await db.insert(users).values(DEFAULT_USER).returning({ id: users.id });
-  return inserted[0].id;
+  await db.insert(users).values(DEFAULT_USER).onConflictDoNothing();
+
+  const afterInsert = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(and(eq(users.email, DEFAULT_USER.email), isNull(users.deletedAt)))
+    .limit(1);
+
+  if (!afterInsert[0]) {
+    throw new Error("Default workspace user could not be created.");
+  }
+
+  return afterInsert[0].id;
 }
 
 async function seedRetailers() {
@@ -348,17 +361,29 @@ async function seedSampleWorkspace() {
 }
 
 export async function ensureWorkspaceSeeded() {
-  const status = await getWorkspaceStatus();
-  if (status.state !== "ready") {
-    return status;
+  if (workspaceSeedPromise) {
+    return workspaceSeedPromise;
   }
 
-  await seedPipelineStages();
-  await getDefaultUserId();
-  await seedRetailers();
-  await seedSampleWorkspace();
+  workspaceSeedPromise = (async () => {
+  const status = await getWorkspaceStatus();
+  if (status.state !== "ready") {
+      return status;
+    }
 
-  return status;
+    await seedPipelineStages();
+    await getDefaultUserId();
+    await seedRetailers();
+    await seedSampleWorkspace();
+
+    return status;
+  })();
+
+  try {
+    return await workspaceSeedPromise;
+  } finally {
+    workspaceSeedPromise = null;
+  }
 }
 
 async function getSupplierOptions(): Promise<Option[]> {
