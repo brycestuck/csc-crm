@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   AssignAccountOwnersForm,
@@ -62,6 +63,51 @@ function buildReturnTo(filters: LeadershipFilterState) {
   return params.toString() ? `/leadership?${params.toString()}` : "/leadership";
 }
 
+function MetricTile({ label, value }: { label: string; value: number }) {
+  return (
+    <article className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+      <div className="section-kicker">{label}</div>
+      <div className="mt-1 font-mono text-2xl font-semibold text-zinc-950">{value}</div>
+    </article>
+  );
+}
+
+function SectionHeader({
+  kicker,
+  title,
+  action,
+}: {
+  kicker: string;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 pb-3">
+      <div>
+        <p className="section-kicker">{kicker}</p>
+        <h2 className="mt-1 text-lg font-semibold text-zinc-950">{title}</h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-500">
+      {message}
+    </div>
+  );
+}
+
+function CompactAssignmentWrap({ children }: { children: ReactNode }) {
+  return (
+    <div className="[&_button]:h-9 [&_button]:px-3 [&_button]:py-0 [&_button]:text-xs [&_form]:gap-1.5 [&_select]:min-w-0 [&_select]:py-2 [&_select]:text-xs">
+      {children}
+    </div>
+  );
+}
+
 export default async function LeadershipPage({
   searchParams,
 }: {
@@ -94,47 +140,34 @@ export default async function LeadershipPage({
     { label: "Active projects", value: overview.activeProjectCount },
     { label: "Open tasks", value: overview.openTaskCount },
     { label: "Unassigned", value: overview.unassignedOwnershipCount },
-    { label: "Multi-owner suppliers", value: overview.multiOwnerSupplierCount },
+    { label: "Multi-owner", value: overview.multiOwnerSupplierCount },
   ];
 
   return (
     <main className="grid gap-4">
       <section className="panel p-4">
-        <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-zinc-200 pb-3">
           <div>
             <p className="section-kicker">Leadership</p>
             <h1 className="mt-1 text-2xl font-semibold text-zinc-950">Control tower</h1>
-            <p className="mt-2 max-w-4xl text-sm leading-6 text-zinc-500">
-              Admin-only view of people, suppliers, retailer accounts, and ownership assignments.
-            </p>
           </div>
-          <Link href="/team" className="btn-secondary">
-            Open team directory
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/leadership" className="btn-secondary">
+              Clear filters
+            </Link>
+            <Link href="/team" className="btn-secondary">
+              Team directory
+            </Link>
+          </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-3 grid gap-2 md:grid-cols-4 2xl:grid-cols-8">
           {overviewCards.map((card) => (
-            <article key={card.label} className="subpanel p-4">
-              <div className="section-kicker">{card.label}</div>
-              <div className="metric-value mt-3">{card.value}</div>
-            </article>
+            <MetricTile key={card.label} label={card.label} value={card.value} />
           ))}
         </div>
-      </section>
 
-      <section className="panel p-4">
-        <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-4">
-          <div>
-            <p className="section-kicker">Filters</p>
-            <h2 className="mt-1 text-lg font-semibold text-zinc-950">Slice the field</h2>
-          </div>
-          <Link href="/leadership" className="text-sm font-medium text-zinc-600 hover:text-zinc-950">
-            Clear filters
-          </Link>
-        </div>
-
-        <form className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_220px_auto]">
+        <form className="mt-3 grid gap-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_220px_auto]">
           <select name="teamMemberId" defaultValue={filters.teamMemberId || ""} className="input-control">
             <option value="">All team members</option>
             {filterOptions.users.map((user) => (
@@ -159,11 +192,7 @@ export default async function LeadershipPage({
               </option>
             ))}
           </select>
-          <select
-            name="assignmentStatus"
-            defaultValue={filters.assignmentStatus}
-            className="input-control"
-          >
+          <select name="assignmentStatus" defaultValue={filters.assignmentStatus} className="input-control">
             <option value="all">All statuses</option>
             <option value="assigned">Assigned</option>
             <option value="unassigned">Unassigned</option>
@@ -174,55 +203,69 @@ export default async function LeadershipPage({
       </section>
 
       <section className="panel p-4">
-        <div className="border-b border-zinc-200 pb-4">
-          <p className="section-kicker">People</p>
-          <h2 className="mt-1 text-lg font-semibold text-zinc-950">Who owns what</h2>
-        </div>
-        <div className="mt-4 grid gap-3">
+        <SectionHeader kicker="People" title="Who owns what" />
+        <div className="mt-3 grid gap-2 xl:grid-cols-2">
           {people.length === 0 ? (
-            <div className="subpanel p-4 text-sm text-zinc-500">No team members match the current filters.</div>
+            <EmptyState message="No team members match the current filters." />
           ) : (
             people.map((person) => (
-              <article key={person.id} className="subpanel p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="flex items-start gap-3">
+              <article key={person.id} className="subpanel p-3">
+                <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_310px] xl:items-start">
+                  <div className="flex min-w-0 gap-3">
                     <UserAvatar
                       name={person.displayName}
                       color={person.avatarColor}
                       imagePath={person.avatarImagePath}
-                      className="h-12 w-12"
+                      className="h-12 w-12 rounded-lg"
                       textClassName="text-sm"
                       sizes="48px"
                     />
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link href={`/team/${person.id}`} className="text-sm font-semibold text-zinc-950 hover:text-indigo-700">
+                        <Link href={`/team/${person.id}`} className="truncate text-sm font-semibold text-zinc-950 hover:text-zinc-700">
                           {person.displayName}
                         </Link>
                         <span className="pill">{person.role}</span>
                       </div>
-                      <div className="mt-1 text-sm text-zinc-500">{person.jobTitle || "No title"}</div>
-                      <div className="mt-1 text-sm text-zinc-500">{person.email}</div>
+                      <div className="mt-1 truncate text-sm text-zinc-600">{person.jobTitle || "No title"}</div>
+                      <div className="mt-1 truncate text-xs text-zinc-500">{person.email}</div>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="pill font-mono">{person.supplierCount} suppliers</span>
-                    <span className="pill font-mono">{person.accountCount} accounts</span>
-                    <span className="pill font-mono">{person.retailerCount} retailers</span>
-                    <span className="pill font-mono">{person.activeProjectCount} projects</span>
-                    <span className="pill font-mono">{person.openTaskCount} open tasks</span>
-                  </div>
+
+                  <dl className="grid grid-cols-5 gap-1.5 text-center text-xs">
+                    <div className="rounded-md border border-zinc-200 bg-white px-2 py-2">
+                      <dt className="uppercase tracking-[0.16em] text-zinc-500">Sup</dt>
+                      <dd className="mt-1 font-mono text-sm text-zinc-950">{person.supplierCount}</dd>
+                    </div>
+                    <div className="rounded-md border border-zinc-200 bg-white px-2 py-2">
+                      <dt className="uppercase tracking-[0.16em] text-zinc-500">Acc</dt>
+                      <dd className="mt-1 font-mono text-sm text-zinc-950">{person.accountCount}</dd>
+                    </div>
+                    <div className="rounded-md border border-zinc-200 bg-white px-2 py-2">
+                      <dt className="uppercase tracking-[0.16em] text-zinc-500">Ret</dt>
+                      <dd className="mt-1 font-mono text-sm text-zinc-950">{person.retailerCount}</dd>
+                    </div>
+                    <div className="rounded-md border border-zinc-200 bg-white px-2 py-2">
+                      <dt className="uppercase tracking-[0.16em] text-zinc-500">Proj</dt>
+                      <dd className="mt-1 font-mono text-sm text-zinc-950">{person.activeProjectCount}</dd>
+                    </div>
+                    <div className="rounded-md border border-zinc-200 bg-white px-2 py-2">
+                      <dt className="uppercase tracking-[0.16em] text-zinc-500">Tasks</dt>
+                      <dd className="mt-1 font-mono text-sm text-zinc-950">{person.openTaskCount}</dd>
+                    </div>
+                  </dl>
                 </div>
-                <div className="mt-4 grid gap-3 xl:grid-cols-2">
-                  <div>
-                    <div className="section-kicker">Suppliers in play</div>
-                    <div className="mt-2 text-sm text-zinc-500">
+
+                <div className="mt-3 grid gap-2 md:grid-cols-2">
+                  <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
+                    <div className="section-kicker">Suppliers</div>
+                    <div className="mt-1 text-xs leading-5 text-zinc-500">
                       {person.supplierNames.length > 0 ? person.supplierNames.join(", ") : "No supplier coverage"}
                     </div>
                   </div>
-                  <div>
-                    <div className="section-kicker">Retailers covered</div>
-                    <div className="mt-2 text-sm text-zinc-500">
+                  <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
+                    <div className="section-kicker">Retailers</div>
+                    <div className="mt-1 text-xs leading-5 text-zinc-500">
                       {person.retailerNames.length > 0 ? person.retailerNames.join(", ") : "No retailer coverage"}
                     </div>
                   </div>
@@ -234,148 +277,158 @@ export default async function LeadershipPage({
       </section>
 
       <section className="panel p-4">
-        <div className="border-b border-zinc-200 pb-4">
-          <p className="section-kicker">Suppliers</p>
-          <h2 className="mt-1 text-lg font-semibold text-zinc-950">Fallback owners, retailer accounts, project owners</h2>
-        </div>
-        <div className="mt-4 grid gap-4">
+        <SectionHeader
+          kicker="Suppliers"
+          title="Fallback owners, account coverage, project ownership"
+        />
+        <div className="mt-3 grid gap-2">
           {suppliers.length === 0 ? (
-            <div className="subpanel p-4 text-sm text-zinc-500">No suppliers match the current filters.</div>
+            <EmptyState message="No suppliers match the current filters." />
           ) : (
             suppliers.map((supplier) => (
-              <article key={supplier.id} className="subpanel p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+              <article key={supplier.id} className="subpanel p-3">
+                <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-start">
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Link
                         href={`/suppliers/${supplier.id}`}
-                        className="text-base font-semibold text-zinc-950 hover:text-indigo-700"
+                        className="text-sm font-semibold text-zinc-950 hover:text-zinc-700"
                       >
                         {supplier.name}
                       </Link>
                       <span className="pill">{supplier.ownerLabel}</span>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
+
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="pill font-mono">{supplier.accountCount} accounts</span>
                       <span className="pill font-mono">{supplier.activeProjectCount} projects</span>
                       <span className="pill font-mono">{supplier.openTaskCount} open tasks</span>
                     </div>
                   </div>
-                  <div className="min-w-[260px]">
-                    <div className="section-kicker">Fallback supplier owner</div>
+
+                  <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
+                    <div className="section-kicker">Fallback owner</div>
                     <div className="mt-2">
-                      <AssignSupplierOwnerForm
-                        entityId={supplier.id}
-                        ownerUserId={supplier.ownerUserId}
-                        users={assignableUsers}
-                        returnTo={returnTo}
-                      />
+                      <CompactAssignmentWrap>
+                        <AssignSupplierOwnerForm
+                          entityId={supplier.id}
+                          ownerUserId={supplier.ownerUserId}
+                          users={assignableUsers}
+                          returnTo={returnTo}
+                        />
+                      </CompactAssignmentWrap>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-4 xl:grid-cols-3">
-                  <div className="grid gap-3 xl:col-span-1">
+                <div className="mt-3 grid gap-2 xl:grid-cols-3">
+                  <div className="rounded-lg border border-zinc-200 bg-white p-3">
                     <div className="section-kicker">Retailer accounts</div>
-                    {supplier.accounts.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-500">
-                        No retailer accounts match these filters.
-                      </div>
-                    ) : (
-                      supplier.accounts.map((account) => (
-                        <div key={account.id} className="rounded-lg border border-zinc-200 bg-white p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-zinc-950">{account.retailerName}</div>
-                              {account.sourceCustomerName !== account.retailerName ? (
-                                <div className="mt-1 text-sm text-zinc-500">
-                                  Imported as {account.sourceCustomerName}
-                                </div>
-                              ) : null}
+                    <div className="mt-2 grid gap-2">
+                      {supplier.accounts.length === 0 ? (
+                        <EmptyState message="No retailer accounts match these filters." />
+                      ) : (
+                        supplier.accounts.map((account) => (
+                          <div key={account.id} className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium text-zinc-950">{account.retailerName}</div>
+                                {account.sourceCustomerName !== account.retailerName ? (
+                                  <div className="mt-1 truncate text-xs text-zinc-500">
+                                    Imported as {account.sourceCustomerName}
+                                  </div>
+                                ) : null}
+                              </div>
+                              <div className="flex shrink-0 gap-1.5">
+                                <span className="pill font-mono">{account.projectCount} proj</span>
+                                <span className="pill font-mono">{account.openTaskCount} open</span>
+                              </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                              <span className="pill font-mono">{account.projectCount} proj</span>
-                              <span className="pill font-mono">{account.openTaskCount} open</span>
+                            <div className="mt-2">
+                              <CompactAssignmentWrap>
+                                <AssignAccountOwnersForm
+                                  accountId={account.id}
+                                  eamUserId={account.eamUserId}
+                                  spmUserId={account.spmUserId}
+                                  users={assignableUsers}
+                                  returnTo={returnTo}
+                                />
+                              </CompactAssignmentWrap>
                             </div>
                           </div>
-                          <div className="mt-3">
-                            <AssignAccountOwnersForm
-                              accountId={account.id}
-                              eamUserId={account.eamUserId}
-                              spmUserId={account.spmUserId}
-                              users={assignableUsers}
-                              returnTo={returnTo}
-                            />
-                          </div>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
 
-                  <div className="grid gap-3 xl:col-span-1">
+                  <div className="rounded-lg border border-zinc-200 bg-white p-3">
                     <div className="section-kicker">Active projects</div>
-                    {supplier.projects.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-500">
-                        No active projects match these filters.
-                      </div>
-                    ) : (
-                      supplier.projects.map((project) => (
-                        <div key={project.id} className="rounded-lg border border-zinc-200 bg-white p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-zinc-950">{project.name}</div>
-                              <div className="mt-1 text-sm text-zinc-500">
-                                {project.retailerName} · {project.stageName || "No stage"}
+                    <div className="mt-2 grid gap-2">
+                      {supplier.projects.length === 0 ? (
+                        <EmptyState message="No active projects match these filters." />
+                      ) : (
+                        supplier.projects.map((project) => (
+                          <div key={project.id} className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium text-zinc-950">{project.name}</div>
+                                <div className="mt-1 truncate text-xs text-zinc-500">
+                                  {project.retailerName} · {project.stageName || "No stage"}
+                                </div>
                               </div>
+                              <Link href="/projects" className="shrink-0 text-xs font-medium text-zinc-600 hover:text-zinc-950">
+                                Open
+                              </Link>
                             </div>
-                            <Link href="/projects" className="text-xs font-medium text-indigo-700">
-                              Projects
-                            </Link>
+                            <div className="mt-2">
+                              <CompactAssignmentWrap>
+                                <AssignProjectOwnerForm
+                                  entityId={project.id}
+                                  ownerUserId={project.ownerUserId}
+                                  users={assignableUsers}
+                                  returnTo={returnTo}
+                                />
+                              </CompactAssignmentWrap>
+                            </div>
                           </div>
-                          <div className="mt-3">
-                            <AssignProjectOwnerForm
-                              entityId={project.id}
-                              ownerUserId={project.ownerUserId}
-                              users={assignableUsers}
-                              returnTo={returnTo}
-                            />
-                          </div>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
 
-                  <div className="grid gap-3 xl:col-span-1">
+                  <div className="rounded-lg border border-zinc-200 bg-white p-3">
                     <div className="section-kicker">Open tasks</div>
-                    {supplier.tasks.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-500">
-                        No open tasks match these filters.
-                      </div>
-                    ) : (
-                      supplier.tasks.map((task) => (
-                        <div key={task.id} className="rounded-lg border border-zinc-200 bg-white p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-zinc-950">{task.title}</div>
-                              <div className="mt-1 text-sm text-zinc-500">
-                                {task.retailerName || "No retailer"} · {task.projectName || "No project"} · {task.status}
+                    <div className="mt-2 grid gap-2">
+                      {supplier.tasks.length === 0 ? (
+                        <EmptyState message="No open tasks match these filters." />
+                      ) : (
+                        supplier.tasks.map((task) => (
+                          <div key={task.id} className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-medium text-zinc-950">{task.title}</div>
+                                <div className="mt-1 truncate text-xs text-zinc-500">
+                                  {task.retailerName || "No retailer"} · {task.projectName || "No project"} · {task.status}
+                                </div>
                               </div>
+                              <Link href="/tasks" className="shrink-0 text-xs font-medium text-zinc-600 hover:text-zinc-950">
+                                Open
+                              </Link>
                             </div>
-                            <Link href="/tasks" className="text-xs font-medium text-indigo-700">
-                              Tasks
-                            </Link>
+                            <div className="mt-2">
+                              <CompactAssignmentWrap>
+                                <AssignTaskOwnerForm
+                                  entityId={task.id}
+                                  ownerUserId={task.ownerUserId}
+                                  users={assignableUsers}
+                                  returnTo={returnTo}
+                                />
+                              </CompactAssignmentWrap>
+                            </div>
                           </div>
-                          <div className="mt-3">
-                            <AssignTaskOwnerForm
-                              entityId={task.id}
-                              ownerUserId={task.ownerUserId}
-                              users={assignableUsers}
-                              returnTo={returnTo}
-                            />
-                          </div>
-                        </div>
-                      ))
-                    )}
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               </article>
@@ -385,29 +438,27 @@ export default async function LeadershipPage({
       </section>
 
       <section className="panel p-4">
-        <div className="border-b border-zinc-200 pb-4">
-          <p className="section-kicker">Retailers</p>
-          <h2 className="mt-1 text-lg font-semibold text-zinc-950">Coverage by customer</h2>
-        </div>
-        <div className="mt-4 grid gap-3">
+        <SectionHeader kicker="Retailers" title="Coverage by customer" />
+        <div className="mt-3 grid gap-2">
           {retailers.length === 0 ? (
-            <div className="subpanel p-4 text-sm text-zinc-500">No retailers match the current filters.</div>
+            <EmptyState message="No retailers match the current filters." />
           ) : (
             retailers.map((retailer) => (
-              <article key={retailer.id} className="subpanel p-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+              <article key={retailer.id} className="subpanel p-3">
+                <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_260px] xl:items-start">
                   <div>
-                    <div className="text-base font-semibold text-zinc-950">{retailer.name}</div>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="text-sm font-semibold text-zinc-950">{retailer.name}</div>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className="pill font-mono">{retailer.supplierCount} suppliers</span>
                       <span className="pill font-mono">{retailer.accountCount} accounts</span>
                       <span className="pill font-mono">{retailer.activeProjectCount} projects</span>
                       <span className="pill font-mono">{retailer.openTaskCount} open tasks</span>
                     </div>
                   </div>
-                  <div className="text-right">
+
+                  <div className="rounded-lg border border-zinc-200 bg-white px-3 py-2">
                     <div className="section-kicker">Coverage state</div>
-                    <div className="mt-2 text-sm text-zinc-500">
+                    <div className="mt-1 text-sm text-zinc-600">
                       {retailer.isMultipleOwners
                         ? "Multiple owners"
                         : retailer.isUnassigned
@@ -417,49 +468,45 @@ export default async function LeadershipPage({
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-4 xl:grid-cols-[320px_1fr]">
-                  <div>
+                <div className="mt-3 grid gap-2 xl:grid-cols-[260px_minmax(0,1fr)]">
+                  <div className="rounded-lg border border-zinc-200 bg-white p-3">
                     <div className="section-kicker">Owner mix</div>
-                    <div className="mt-3 grid gap-2">
+                    <div className="mt-2 grid gap-2">
                       {retailer.ownerBreakdown.length === 0 ? (
-                        <div className="rounded-lg border border-dashed border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-500">
-                          No assigned EAM/SPM coverage.
-                        </div>
+                        <EmptyState message="No assigned EAM/SPM coverage." />
                       ) : (
                         retailer.ownerBreakdown.map((owner) => (
                           <div
                             key={`${retailer.id}-${owner.userId}`}
-                            className="rounded-lg border border-zinc-200 bg-white px-4 py-3"
+                            className="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2"
                           >
-                            <div className="flex items-center justify-between gap-3">
-                              <div className="text-sm font-medium text-zinc-950">{owner.displayName}</div>
-                              <div className="font-mono text-sm text-zinc-500">{owner.count}</div>
-                            </div>
+                            <div className="truncate text-sm font-medium text-zinc-950">{owner.displayName}</div>
+                            <div className="font-mono text-sm text-zinc-500">{owner.count}</div>
                           </div>
                         ))
                       )}
                     </div>
                   </div>
 
-                  <div>
+                  <div className="rounded-lg border border-zinc-200 bg-white p-3">
                     <div className="section-kicker">Linked supplier accounts</div>
-                    <div className="mt-3 grid gap-2">
+                    <div className="mt-2 grid gap-2">
                       {retailer.accounts.map((account) => (
-                        <div key={account.id} className="rounded-lg border border-zinc-200 bg-white px-4 py-3">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div>
+                        <div key={account.id} className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div className="min-w-0">
                               <Link
                                 href={`/suppliers/${account.supplierId}`}
-                                className="text-sm font-semibold text-zinc-950 hover:text-indigo-700"
+                                className="truncate text-sm font-semibold text-zinc-950 hover:text-zinc-700"
                               >
                                 {account.supplierName}
                               </Link>
-                              <div className="mt-1 text-sm text-zinc-500">
+                              <div className="mt-1 text-xs text-zinc-500">
                                 EAM: {account.eamDisplayName || "Unassigned"} · SPM:{" "}
                                 {account.spmDisplayName || "Unassigned"}
                               </div>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5">
                               <span className="pill font-mono">{account.projectCount} proj</span>
                               <span className="pill font-mono">{account.openTaskCount} open</span>
                             </div>
