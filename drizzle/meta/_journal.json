@@ -15,6 +15,13 @@
       "when": 1773033594425,
       "tag": "0001_windy_paibok",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773034665150,
+      "tag": "0002_far_dexter_bennett",
+      "breakpoints": true
     }
   ]
 }

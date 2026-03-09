@@ -54,6 +54,7 @@ export const users = pgTable(
     phone: text("phone"),
     bio: text("bio"),
     avatarColor: text("avatar_color").notNull().default("#8863b7"),
+    avatarImagePath: text("avatar_image_path"),
     msOid: text("ms_oid").unique(),
     role: text("role").$type<UserRole>().notNull().default("member"),
     isActive: boolean("is_active").notNull().default(true),

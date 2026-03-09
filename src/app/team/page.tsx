@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CreateUserForm } from "@/components/crm/forms";
 import { SetupState } from "@/components/crm/setup-state";
+import { UserAvatar } from "@/components/crm/user-avatar";
 import { getTeamPageData, getWorkspaceStatus } from "@/lib/db/crm";
 
 export const dynamic = "force-dynamic";
@@ -29,17 +30,14 @@ export default async function TeamPage() {
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="flex items-start gap-4">
-                  <div
-                    className="flex h-14 w-14 items-center justify-center rounded-2xl text-lg font-semibold text-white"
-                    style={{ backgroundColor: user.avatarColor }}
-                  >
-                    {user.displayName
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")
-                      .slice(0, 2)
-                      .toUpperCase()}
-                  </div>
+                  <UserAvatar
+                    name={user.displayName}
+                    color={user.avatarColor}
+                    imagePath={user.avatarImagePath}
+                    className="h-14 w-14 rounded-2xl"
+                    textClassName="text-lg"
+                    sizes="56px"
+                  />
                   <div>
                     <h2 className="text-xl font-semibold text-[var(--ink)]">{user.displayName}</h2>
                     <p className="mt-1 text-sm text-[var(--muted)]">

@@ -59,6 +59,7 @@ type UserOption = {
   jobTitle: string | null;
   department: string | null;
   avatarColor: string;
+  avatarImagePath: string | null;
 };
 
 type ProjectOption = {
@@ -105,14 +106,14 @@ export async function getWorkspaceStatus(): Promise<WorkspaceStatus> {
         from information_schema.columns
         where table_schema = 'public'
           and table_name = 'users'
-          and column_name in ('job_title', 'department', 'team_partner', 'phone', 'bio', 'avatar_color')
+          and column_name in ('job_title', 'department', 'team_partner', 'phone', 'bio', 'avatar_color', 'avatar_image_path')
       `
     );
 
-    if ((userProfileColumns.rows[0]?.count ?? 0) < 6) {
+    if ((userProfileColumns.rows[0]?.count ?? 0) < 7) {
       return {
         state: "schema-missing",
-        message: "The Hub schema needs an update. Run npm run db:push in the Replit shell to add team profile fields.",
+        message: "The Hub schema needs an update. Run npm run db:push in the Replit shell to add the latest team profile fields.",
       };
     }
 
@@ -191,6 +192,7 @@ async function seedTeamProfiles() {
           teamPartner: user.teamPartner,
           bio: user.bio,
           avatarColor: user.avatarColor,
+          avatarImagePath: user.avatarImagePath,
           role: user.role,
           updatedAt: new Date(),
         },
@@ -256,6 +258,7 @@ async function getUserOptions(): Promise<UserOption[]> {
       jobTitle: users.jobTitle,
       department: users.department,
       avatarColor: users.avatarColor,
+      avatarImagePath: users.avatarImagePath,
     })
     .from(users)
     .where(and(isNull(users.deletedAt), eq(users.isActive, true)))
@@ -827,6 +830,7 @@ export async function getTeamPageData() {
         phone: users.phone,
         bio: users.bio,
         avatarColor: users.avatarColor,
+        avatarImagePath: users.avatarImagePath,
         role: users.role,
       })
       .from(users)
@@ -900,6 +904,7 @@ export async function getTeamMemberDetailData(userId: string) {
       phone: users.phone,
       bio: users.bio,
       avatarColor: users.avatarColor,
+      avatarImagePath: users.avatarImagePath,
       role: users.role,
     })
     .from(users)

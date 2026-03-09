@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { SetupState } from "@/components/crm/setup-state";
+import { UserAvatar } from "@/components/crm/user-avatar";
 import { getTeamMemberDetailData, getWorkspaceStatus } from "@/lib/db/crm";
 import { formatDate, formatRelativeDaysFromNow } from "@/lib/utils";
 
@@ -14,24 +15,19 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
   const data = await getTeamMemberDetailData(params.id);
   if (!data) notFound();
 
-  const initials = data.user.displayName
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-
   return (
     <main className="grid gap-6">
       <section className="hub-panel rounded-[32px] p-6">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex items-start gap-5">
-            <div
-              className="flex h-20 w-20 items-center justify-center rounded-[28px] text-2xl font-semibold text-white"
-              style={{ backgroundColor: data.user.avatarColor }}
-            >
-              {initials}
-            </div>
+            <UserAvatar
+              name={data.user.displayName}
+              color={data.user.avatarColor}
+              imagePath={data.user.avatarImagePath}
+              className="h-20 w-20 rounded-[28px]"
+              textClassName="text-2xl"
+              sizes="80px"
+            />
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--accent-strong)]">
                 Team member

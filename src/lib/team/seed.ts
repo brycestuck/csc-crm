@@ -8,6 +8,7 @@ export type TeamSeedUser = {
   teamPartner: string | null;
   bio: string | null;
   avatarColor: string;
+  avatarImagePath: string | null;
   role: UserRole;
 };
 
@@ -20,6 +21,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Michelle (SPM)",
     bio: "Dual role: CEO and EAM paired with Michelle.",
     avatarColor: "#5f4689",
+    avatarImagePath: "/avatars/team/clint.png",
     role: "admin",
   },
   {
@@ -30,6 +32,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Clint (EAM), Bob (EAM)",
     bio: "Dual role: COO and SPM for both Clint and Bob teams.",
     avatarColor: "#8863b7",
+    avatarImagePath: "/avatars/team/michelle.png",
     role: "admin",
   },
   {
@@ -40,6 +43,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Michelle (SPM)",
     bio: null,
     avatarColor: "#7c6ab0",
+    avatarImagePath: null,
     role: "member",
   },
   {
@@ -50,6 +54,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Kasandra (SPM)",
     bio: null,
     avatarColor: "#b08ccb",
+    avatarImagePath: "/avatars/team/melanie.png",
     role: "member",
   },
   {
@@ -60,6 +65,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Melanie (EAM)",
     bio: null,
     avatarColor: "#7c89d9",
+    avatarImagePath: "/avatars/team/kasandra.png",
     role: "member",
   },
   {
@@ -70,6 +76,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Stacie (SPM)",
     bio: null,
     avatarColor: "#6b8ea6",
+    avatarImagePath: "/avatars/team/ragan.png",
     role: "member",
   },
   {
@@ -80,6 +87,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Ragan (EAM)",
     bio: null,
     avatarColor: "#8863b7",
+    avatarImagePath: "/avatars/team/stacie.png",
     role: "member",
   },
   {
@@ -90,6 +98,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Robin (SAC)",
     bio: null,
     avatarColor: "#5f4689",
+    avatarImagePath: "/avatars/team/sandy.png",
     role: "member",
   },
   {
@@ -100,6 +109,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Sandy (EAM)",
     bio: null,
     avatarColor: "#7c6ab0",
+    avatarImagePath: null,
     role: "member",
   },
   {
@@ -110,6 +120,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Heather (SPM)",
     bio: null,
     avatarColor: "#b08ccb",
+    avatarImagePath: "/avatars/team/chas.png",
     role: "member",
   },
   {
@@ -120,6 +131,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: "Chas (EAM)",
     bio: null,
     avatarColor: "#7c89d9",
+    avatarImagePath: "/avatars/team/heather.png",
     role: "member",
   },
   {
@@ -130,6 +142,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: null,
     bio: null,
     avatarColor: "#6b8ea6",
+    avatarImagePath: "/avatars/team/kaelee.png",
     role: "member",
   },
   {
@@ -140,6 +153,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: null,
     bio: null,
     avatarColor: "#8863b7",
+    avatarImagePath: "/avatars/team/kendal.png",
     role: "member",
   },
   {
@@ -150,6 +164,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: null,
     bio: null,
     avatarColor: "#5f4689",
+    avatarImagePath: null,
     role: "member",
   },
   {
@@ -160,6 +175,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: null,
     bio: null,
     avatarColor: "#7c6ab0",
+    avatarImagePath: null,
     role: "member",
   },
   {
@@ -170,6 +186,7 @@ export const teamSeedUsers: readonly TeamSeedUser[] = [
     teamPartner: null,
     bio: null,
     avatarColor: "#b08ccb",
+    avatarImagePath: null,
     role: "member",
   },
 ];
