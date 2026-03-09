@@ -48,6 +48,8 @@ export const users = pgTable(
     email: text("email").notNull().unique(),
     displayName: text("display_name").notNull(),
     jobTitle: text("job_title"),
+    department: text("department"),
+    teamPartner: text("team_partner"),
     phone: text("phone"),
     bio: text("bio"),
     avatarColor: text("avatar_color").notNull().default("#8863b7"),

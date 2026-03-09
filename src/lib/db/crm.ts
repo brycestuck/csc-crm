@@ -15,6 +15,7 @@ import {
   tasks,
   users,
 } from "@/lib/db/schema";
+import { defaultUserSeed, teamSeedUsers } from "@/lib/team/seed";
 import {
   pipelineStageSeeds,
   type ActivityType,
@@ -32,15 +33,6 @@ const DEFAULT_RETAILERS = [
   { name: "Dollar General", calendarType: "standard" as const },
   { name: "Amazon", calendarType: "standard" as const },
 ];
-
-const DEFAULT_USER = {
-  email: "admin@creativesales.local",
-  displayName: "CSC Admin",
-  jobTitle: "Workspace Admin",
-  bio: "Default workspace operator until the real team roster is added.",
-  avatarColor: "#8863b7",
-  role: "admin" as const,
-};
 
 let workspaceSeedPromise: Promise<WorkspaceStatus> | null = null;
 
@@ -60,6 +52,7 @@ type UserOption = {
   displayName: string;
   role: UserRole;
   jobTitle: string | null;
+  department: string | null;
   avatarColor: string;
 };
 
@@ -111,11 +104,11 @@ export async function getWorkspaceStatus(): Promise<WorkspaceStatus> {
         from information_schema.columns
         where table_schema = 'public'
           and table_name = 'users'
-          and column_name in ('job_title', 'phone', 'bio', 'avatar_color')
+          and column_name in ('job_title', 'department', 'team_partner', 'phone', 'bio', 'avatar_color')
       `
     );
 
-    if ((userProfileColumns.rows[0]?.count ?? 0) < 4) {
+    if ((userProfileColumns.rows[0]?.count ?? 0) < 6) {
       return {
         state: "schema-missing",
         message: "The Hub schema needs an update. Run npm run db:push in the Replit shell to add team profile fields.",
@@ -151,19 +144,19 @@ async function getDefaultUserId() {
   const existing = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.email, DEFAULT_USER.email), isNull(users.deletedAt)))
+    .where(and(eq(users.email, defaultUserSeed.email), isNull(users.deletedAt)))
     .limit(1);
 
   if (existing[0]) {
     return existing[0].id;
   }
 
-  await db.insert(users).values(DEFAULT_USER).onConflictDoNothing();
+  await db.insert(users).values(defaultUserSeed).onConflictDoNothing();
 
   const afterInsert = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.email, DEFAULT_USER.email), isNull(users.deletedAt)))
+    .where(and(eq(users.email, defaultUserSeed.email), isNull(users.deletedAt)))
     .limit(1);
 
   if (!afterInsert[0]) {
@@ -178,6 +171,29 @@ async function seedRetailers() {
 
   for (const retailer of DEFAULT_RETAILERS) {
     await db.insert(retailers).values(retailer).onConflictDoNothing();
+  }
+}
+
+async function seedTeamProfiles() {
+  const db = getDb();
+
+  for (const user of teamSeedUsers) {
+    await db
+      .insert(users)
+      .values(user)
+      .onConflictDoUpdate({
+        target: users.email,
+        set: {
+          displayName: user.displayName,
+          jobTitle: user.jobTitle,
+          department: user.department,
+          teamPartner: user.teamPartner,
+          bio: user.bio,
+          avatarColor: user.avatarColor,
+          role: user.role,
+          updatedAt: new Date(),
+        },
+      });
   }
 }
 
@@ -403,8 +419,9 @@ export async function ensureWorkspaceSeeded() {
     }
 
     await seedPipelineStages();
-    await getDefaultUserId();
     await seedRetailers();
+    await seedTeamProfiles();
+    await getDefaultUserId();
     await seedSampleWorkspace();
 
     return status;
@@ -446,6 +463,7 @@ async function getUserOptions(): Promise<UserOption[]> {
       displayName: users.displayName,
       role: users.role,
       jobTitle: users.jobTitle,
+      department: users.department,
       avatarColor: users.avatarColor,
     })
     .from(users)
@@ -912,6 +930,8 @@ export async function getTeamPageData() {
         displayName: users.displayName,
         email: users.email,
         jobTitle: users.jobTitle,
+        department: users.department,
+        teamPartner: users.teamPartner,
         phone: users.phone,
         bio: users.bio,
         avatarColor: users.avatarColor,
@@ -961,6 +981,8 @@ export async function getTeamMemberDetailData(userId: string) {
       displayName: users.displayName,
       email: users.email,
       jobTitle: users.jobTitle,
+      department: users.department,
+      teamPartner: users.teamPartner,
       phone: users.phone,
       bio: users.bio,
       avatarColor: users.avatarColor,
@@ -1125,6 +1147,8 @@ export async function createUser(input: {
   displayName: string;
   email: string;
   jobTitle?: string;
+  department?: string;
+  teamPartner?: string;
   phone?: string;
   bio?: string;
   role: UserRole;
@@ -1141,6 +1165,8 @@ export async function createUser(input: {
       displayName: input.displayName,
       email: input.email,
       jobTitle: input.jobTitle || null,
+      department: input.department || null,
+      teamPartner: input.teamPartner || null,
       phone: input.phone || null,
       bio: input.bio || null,
       avatarColor: color,

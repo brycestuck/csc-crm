@@ -38,10 +38,16 @@ export default async function TeamMemberPage({ params }: { params: { id: string 
               </p>
               <h1 className="mt-3 text-4xl font-semibold text-[var(--ink)]">{data.user.displayName}</h1>
               <p className="mt-2 text-base text-[var(--muted)]">
-                {data.user.jobTitle || "No title yet"} · {data.user.role}
+                {data.user.jobTitle || "No title yet"}
+              </p>
+              <p className="mt-1 text-sm text-[var(--muted)]">
+                {data.user.department || "No department yet"} · {data.user.role}
               </p>
               <p className="mt-2 text-sm text-[var(--muted)]">{data.user.email}</p>
               {data.user.phone ? <p className="mt-1 text-sm text-[var(--muted)]">{data.user.phone}</p> : null}
+              {data.user.teamPartner ? (
+                <p className="mt-2 text-sm text-[var(--accent-deep)]">Sales partner: {data.user.teamPartner}</p>
+              ) : null}
               {data.user.bio ? (
                 <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--muted)]">{data.user.bio}</p>
               ) : null}

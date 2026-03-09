@@ -24,6 +24,7 @@ type UserOption = {
   displayName: string;
   role: string;
   jobTitle: string | null;
+  department: string | null;
   avatarColor: string;
 };
 
@@ -124,6 +125,8 @@ export function CreateUserForm() {
       <input name="displayName" placeholder="Full name" required className={inputClassName()} />
       <input name="email" type="email" placeholder="Email" required className={inputClassName()} />
       <input name="jobTitle" placeholder="Job title" className={inputClassName()} />
+      <input name="department" placeholder="Department" className={inputClassName()} />
+      <input name="teamPartner" placeholder="Sales team partner" className={inputClassName()} />
       <input name="phone" placeholder="Phone" className={inputClassName()} />
       <select name="role" defaultValue="member" className={inputClassName()}>
         {userRoles.map((role) => (

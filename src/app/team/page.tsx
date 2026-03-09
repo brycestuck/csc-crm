@@ -43,9 +43,15 @@ export default async function TeamPage() {
                   <div>
                     <h2 className="text-xl font-semibold text-[var(--ink)]">{user.displayName}</h2>
                     <p className="mt-1 text-sm text-[var(--muted)]">
-                      {user.jobTitle || "No title yet"} · {user.role}
+                      {user.jobTitle || "No title yet"}
+                    </p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">
+                      {user.department || "No department yet"} · {user.role}
                     </p>
                     <p className="mt-2 text-sm text-[var(--muted)]">{user.email}</p>
+                    {user.teamPartner ? (
+                      <p className="mt-2 text-sm text-[var(--accent-deep)]">Partner: {user.teamPartner}</p>
+                    ) : null}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm text-[var(--muted)]">
