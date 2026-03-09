@@ -156,9 +156,9 @@ export default async function TeamPage({ searchParams }: TeamPageProps) {
                       name={user.displayName}
                       color={user.avatarColor}
                       imagePath={user.avatarImagePath}
-                      className="h-11 w-11 rounded-lg"
-                      textClassName="text-sm"
-                      sizes="44px"
+                      className="h-14 w-14 rounded-xl"
+                      textClassName="text-base"
+                      sizes="56px"
                     />
 
                     <div className="min-w-0">
@@ -206,19 +206,19 @@ export default async function TeamPage({ searchParams }: TeamPageProps) {
                 </div>
 
                 <dl className="mt-3 grid grid-cols-2 gap-2 border-t border-zinc-100 pt-3 text-xs sm:grid-cols-4">
-                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2">
+                  <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center">
                     <dt className="uppercase tracking-[0.16em] text-zinc-500">Suppliers</dt>
                     <dd className="mt-1 font-mono text-sm text-zinc-950">{user.supplierCount}</dd>
                   </div>
-                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2">
+                  <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center">
                     <dt className="uppercase tracking-[0.16em] text-zinc-500">Accounts</dt>
                     <dd className="mt-1 font-mono text-sm text-zinc-950">{user.accountCount}</dd>
                   </div>
-                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2">
+                  <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center">
                     <dt className="uppercase tracking-[0.16em] text-zinc-500">Projects</dt>
                     <dd className="mt-1 font-mono text-sm text-zinc-950">{user.activeProjectCount}</dd>
                   </div>
-                  <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2">
+                  <div className="flex min-h-[64px] flex-col items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 px-2 py-1.5 text-center">
                     <dt className="uppercase tracking-[0.16em] text-zinc-500">Open tasks</dt>
                     <dd className="mt-1 font-mono text-sm text-zinc-950">{user.openTaskCount}</dd>
                   </div>
