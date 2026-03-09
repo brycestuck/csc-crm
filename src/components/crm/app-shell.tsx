@@ -16,6 +16,7 @@ import { UserAvatar } from "@/components/crm/user-avatar";
 import { cn } from "@/lib/utils";
 
 type CurrentUser = {
+  id: string;
   displayName: string;
   email: string;
   role: "admin" | "member";
@@ -43,6 +44,8 @@ export function AppShell({
   const items = currentUser.role === "admin"
     ? [...navItems, { href: "/leadership", label: "Leadership", icon: Shield }]
     : navItems;
+  const activeItem =
+    items.find(({ href }) => (href === "/" ? pathname === href : pathname.startsWith(href))) ?? items[0];
 
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -75,39 +78,49 @@ export function AppShell({
               );
             })}
           </nav>
-
-          <div className="mt-auto rounded-lg border border-zinc-200 bg-zinc-50 p-3">
-            <div className="section-kicker">Signed in as</div>
-            <div className="mt-3 flex items-start gap-3">
-              <UserAvatar
-                name={currentUser.displayName}
-                color={currentUser.avatarColor}
-                imagePath={currentUser.avatarImagePath}
-                className="h-11 w-11"
-                textClassName="text-sm"
-                sizes="44px"
-              />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold text-zinc-950">
-                  {currentUser.displayName}
-                </div>
-                <div className="truncate text-xs text-zinc-500">{currentUser.email}</div>
-                <div className="mt-2 inline-flex items-center rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-zinc-600">
-                  {currentUser.role}
-                </div>
-              </div>
-            </div>
-            <Link
-              href="/api/auth/logout"
-              className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-950"
-            >
-              <LogOut size={14} />
-              Sign out
-            </Link>
-          </div>
         </aside>
 
-        <div className="min-w-0">{children}</div>
+        <div className="min-w-0">
+          <header className="panel mb-4 flex flex-wrap items-center justify-between gap-3 p-3">
+            <div>
+              <p className="section-kicker">Workspace</p>
+              <div className="mt-1 text-sm font-semibold text-zinc-950">{activeItem.label}</div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href={`/team/${currentUser.id}`}
+                className="inline-flex h-10 items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 transition hover:border-zinc-300 hover:bg-white"
+              >
+                <UserAvatar
+                  name={currentUser.displayName}
+                  color={currentUser.avatarColor}
+                  imagePath={currentUser.avatarImagePath}
+                  className="h-9 w-9 rounded-lg"
+                  textClassName="text-sm"
+                  sizes="36px"
+                />
+                <div className="min-w-0 text-left">
+                  <div className="section-kicker">Signed in</div>
+                  <div className="truncate text-sm font-semibold text-zinc-950">{currentUser.displayName}</div>
+                </div>
+                <div className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-zinc-600">
+                  {currentUser.role}
+                </div>
+              </Link>
+
+              <Link
+                href="/api/auth/logout"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-600 transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-950"
+              >
+                <LogOut size={14} />
+                Sign out
+              </Link>
+            </div>
+          </header>
+
+          <div className="min-w-0">{children}</div>
+        </div>
       </div>
     </div>
   );
