@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getPublicAppUrl } from "@/lib/auth/redirect";
 import {
   clearAuthError,
   createSessionForUser,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/auth/session";
 
 function redirectHome(request: Request) {
-  return NextResponse.redirect(new URL("/", request.url));
+  return NextResponse.redirect(getPublicAppUrl(request));
 }
 
 export async function POST(request: Request) {

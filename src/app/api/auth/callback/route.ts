@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getPublicAppUrl } from "@/lib/auth/redirect";
 import { exchangeMicrosoftCode, fetchMicrosoftProfile } from "@/lib/auth/microsoft";
 import {
   createSessionForUser,
@@ -8,7 +9,7 @@ import {
 } from "@/lib/auth/session";
 
 function getAppBaseUrl(request: Request) {
-  return new URL("/", request.url);
+  return getPublicAppUrl(request);
 }
 
 export async function GET(request: Request) {
