@@ -36,6 +36,7 @@ Copy `.env.example` to `.env.local` and set at minimum:
 - `MICROSOFT_TENANT_ID`
 - `MICROSOFT_REDIRECT_URI`
 - `SESSION_SECRET`
+- `LOCAL_ADMIN_EMAIL` and `LOCAL_ADMIN_PASSWORD` if you need temporary non-Microsoft access during setup
 
 ## Replit hosting
 
@@ -55,6 +56,9 @@ Add these as Replit Secrets:
 - `MICROSOFT_REDIRECT_URI`
 - `GRAPH_DIGEST_SENDER`
 - `SESSION_SECRET`
+- `LOCAL_ADMIN_EMAIL`
+- `LOCAL_ADMIN_PASSWORD`
+- `LOCAL_ADMIN_NAME` (optional)
 
 ## Commands
 
@@ -72,6 +76,8 @@ npm run db:push
 - The first launch into an empty database seeds pipeline stages, core retailers, a default admin user, sample suppliers, sample projects, sample tasks, sample activities, sample buyers, and supplier contacts.
 - After pulling schema changes, run `npm run db:push` again so new columns like team profile fields are applied to Replit Postgres.
 - Microsoft login now gates the app. Users must exist in the seeded/team roster and sign in with that exact CSC Microsoft account.
+- If CSC Microsoft provisioning is delayed, you can enable a temporary env-backed local super-admin login with `LOCAL_ADMIN_EMAIL` and `LOCAL_ADMIN_PASSWORD`.
+- The local admin path is intended as a temporary implementation bypass and should be removed or disabled once CSC Microsoft auth is live.
 - Set `MICROSOFT_REDIRECT_URI` to the live Replit callback URL, for example `https://your-repl-domain/api/auth/callback`.
 - Leadership reassignment now lives at `/leadership` and is only visible to `admin` users.
 - Finance schema additions are present but intentionally unused by CRM UI and routes at this stage.

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { and, eq, isNull, sql } from "drizzle-orm";
@@ -13,6 +14,8 @@ const SESSION_COOKIE_NAME = "the_hub_session";
 const AUTH_STATE_COOKIE_NAME = "the_hub_auth_state";
 const AUTH_ERROR_COOKIE_NAME = "the_hub_auth_error";
 const SESSION_TTL_SECONDS = 60 * 60 * 10;
+const LOCAL_ADMIN_DEFAULT_NAME = "Bryce Stuckenschneider";
+const LOCAL_ADMIN_DEFAULT_COLOR = "#111827";
 
 export type CurrentUser = {
   id: string;
@@ -73,6 +76,48 @@ export function clearAuthError() {
 
 export function getAuthErrorMessage() {
   return cookies().get(AUTH_ERROR_COOKIE_NAME)?.value ?? null;
+}
+
+function getLocalAdminEmail() {
+  return process.env.LOCAL_ADMIN_EMAIL?.trim().toLowerCase() || null;
+}
+
+function getLocalAdminPassword() {
+  return process.env.LOCAL_ADMIN_PASSWORD || null;
+}
+
+function getLocalAdminName() {
+  return process.env.LOCAL_ADMIN_NAME?.trim() || LOCAL_ADMIN_DEFAULT_NAME;
+}
+
+export function hasLocalAdminCredentials() {
+  return Boolean(getLocalAdminEmail() && getLocalAdminPassword());
+}
+
+function constantTimeEqual(left: string, right: string) {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+export function validateLocalAdminCredentials(input: { email: string; password: string }) {
+  const configuredEmail = getLocalAdminEmail();
+  const configuredPassword = getLocalAdminPassword();
+
+  if (!configuredEmail || !configuredPassword) {
+    return false;
+  }
+
+  const submittedEmail = input.email.trim().toLowerCase();
+  return (
+    constantTimeEqual(submittedEmail, configuredEmail) &&
+    constantTimeEqual(input.password, configuredPassword)
+  );
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -174,4 +219,50 @@ export async function findUserForMicrosoftProfile(input: { email: string; msOid:
     .limit(1);
 
   return byOid[0] ?? null;
+}
+
+export async function ensureLocalAdminUser() {
+  await ensureWorkspaceSeeded();
+
+  const localAdminEmail = getLocalAdminEmail();
+  if (!localAdminEmail) {
+    throw new Error("LOCAL_ADMIN_EMAIL is not set.");
+  }
+
+  const db = getDb();
+  const existing = await db
+    .select({
+      id: users.id,
+    })
+    .from(users)
+    .where(and(isNull(users.deletedAt), sql`lower(${users.email}) = ${localAdminEmail}`))
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(users)
+      .set({
+        displayName: getLocalAdminName(),
+        role: "admin",
+        isActive: true,
+        avatarColor: LOCAL_ADMIN_DEFAULT_COLOR,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, existing[0].id));
+
+    return existing[0].id;
+  }
+
+  const inserted = await db
+    .insert(users)
+    .values({
+      email: localAdminEmail,
+      displayName: getLocalAdminName(),
+      role: "admin",
+      isActive: true,
+      avatarColor: LOCAL_ADMIN_DEFAULT_COLOR,
+    })
+    .returning({ id: users.id });
+
+  return inserted[0].id;
 }

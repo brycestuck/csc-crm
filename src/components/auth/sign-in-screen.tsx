@@ -3,9 +3,11 @@ import Link from "next/link";
 export function SignInScreen({
   authError,
   microsoftConfigured,
+  localAdminConfigured,
 }: {
   authError?: string | null;
   microsoftConfigured: boolean;
+  localAdminConfigured: boolean;
 }) {
   return (
     <div className="min-h-screen bg-zinc-50 px-4 py-10">
@@ -38,6 +40,34 @@ export function SignInScreen({
               </div>
             )}
           </div>
+
+          {localAdminConfigured ? (
+            <div className="mt-6 border-t border-zinc-200 pt-5">
+              <div className="section-kicker">Temporary local admin</div>
+              <div className="mt-2 text-sm leading-6 text-zinc-500">
+                Use the env-backed super-admin credentials configured for this environment.
+              </div>
+              <form action="/api/auth/local" method="post" className="mt-4 grid gap-3 sm:grid-cols-2">
+                <input
+                  name="email"
+                  type="email"
+                  placeholder="Admin email"
+                  required
+                  className="input-control"
+                />
+                <input
+                  name="password"
+                  type="password"
+                  placeholder="Password"
+                  required
+                  className="input-control"
+                />
+                <div className="sm:col-span-2">
+                  <button className="btn-secondary">Sign in as local admin</button>
+                </div>
+              </form>
+            </div>
+          ) : null}
         </section>
 
         <section className="panel grid gap-4 p-5 lg:p-6">
@@ -57,6 +87,13 @@ export function SignInScreen({
               <div className="section-kicker">Admins</div>
               <div className="mt-2 text-sm text-zinc-700">
                 Leadership command center, ownership reassignment, team provisioning.
+              </div>
+            </div>
+            <div className="subpanel p-4">
+              <div className="section-kicker">Temporary access</div>
+              <div className="mt-2 text-sm text-zinc-700">
+                Optional local-admin credentials can be enabled for implementation work before CSC
+                Microsoft provisioning is complete.
               </div>
             </div>
           </div>
